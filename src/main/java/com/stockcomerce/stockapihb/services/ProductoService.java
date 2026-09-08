@@ -28,7 +28,6 @@ public class ProductoService implements IProductoService {
                 .nombre(productoDTO.getNombre())
                 .precio(productoDTO.getPrecio())
                 .categoria(productoDTO.getCategoria())
-                .cantidad(productoDTO.getCantidad())
                 .build();
         return Mapper.prodDTO(repo.save(prod));
     }
@@ -41,14 +40,14 @@ public class ProductoService implements IProductoService {
         prod.setNombre(productoDTO.getNombre());
         prod.setPrecio(productoDTO.getPrecio());
         prod.setCategoria(productoDTO.getCategoria());
-        prod.setCantidad(productoDTO.getCantidad());
 
         return Mapper.prodDTO(repo.save(prod));
     }
 
     @Override
     public void eliminarProducto(Long id) {
-        if (repo.existsById(id)) {
+        // ojo: estaba invertido, tiraba NotFound cuando el producto SI existia
+        if (!repo.existsById(id)) {
             throw new NotFoundException("Producto No Encontrado Para Deletar");
         }
 

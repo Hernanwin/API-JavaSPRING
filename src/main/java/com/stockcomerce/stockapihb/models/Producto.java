@@ -21,7 +21,5 @@ public class Producto {
     private String nombre;
     private String categoria;
     private BigDecimal precio;
-    private Integer stockActual;
-    private Integer stockMinimo;
-    private int cantidad;
+    // el stock ya no vive aca: ahora es Inventario (Producto + Tienda)
 }

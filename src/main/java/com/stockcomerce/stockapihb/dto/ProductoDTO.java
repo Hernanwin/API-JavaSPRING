@@ -15,5 +15,5 @@ public class ProductoDTO {
     private String nombre;
     private BigDecimal precio;
     private String categoria;
-    private int cantidad;
+    // el stock ahora se consulta por /api/inventario (Producto + Tienda), no por aca
 }

@@ -26,6 +26,6 @@ public class Venta {
     private Tienda tienda;
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL,
-    orphanRemoval = true, fetch = FetchType.EAGER)
+            orphanRemoval = true, fetch = FetchType.EAGER)
     private List<DetalleVenta> detalle = new ArrayList<>();
 }
