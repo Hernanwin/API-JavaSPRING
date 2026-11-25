@@ -15,15 +15,14 @@ const C_CARD_LIGHT = '243256';// Tarjeta secundaria
 const C_PRIMARY = '00D2D3';   // Cyan turquesa brillante
 const C_ACCENT = '10B981';    // Verde esmeralda
 const C_AMBER = 'F59E0B';     // Ámbar para advertencias/estados
+const C_RED = 'EF4444';       // Rojo coral para casos FAIL y seguridad
 const C_TEXT = 'FFFFFF';      // Blanco puro para títulos y texto principal
 const C_TEXT_MUTED = 'CBD5E1';// Gris claro para texto secundario
 const C_BORDER = '3A506B';
 
 function applySlideDefaults(slide, title, category) {
-  // Background
   slide.background = { color: C_BG };
 
-  // Header banner / Category
   if (category) {
     slide.addText(category.toUpperCase(), {
       x: 0.8, y: 0.4, w: 10, h: 0.3,
@@ -31,7 +30,6 @@ function applySlideDefaults(slide, title, category) {
     });
   }
 
-  // Slide Title
   if (title) {
     slide.addText(title, {
       x: 0.8, y: 0.7, w: 11.5, h: 0.6,
@@ -39,7 +37,6 @@ function applySlideDefaults(slide, title, category) {
     });
   }
 
-  // Footer
   slide.addText('StockCommerce — Monorepo Enterprise Full-Stack', {
     x: 0.8, y: 7.1, w: 6, h: 0.3,
     fontSize: 9, color: '64748B', fontFace: 'Calibri'
@@ -57,7 +54,6 @@ function applySlideDefaults(slide, title, category) {
   const slide = pptx.addSlide();
   slide.background = { color: C_BG };
 
-  // Tag superior
   slide.addShape(pptx.ShapeType.roundRect, {
     x: 0.8, y: 1.2, w: 2.8, h: 0.4,
     fill: { color: '1E293B' }, line: { color: C_PRIMARY, width: 1.5 }, rectRadius: 0.1
@@ -67,23 +63,20 @@ function applySlideDefaults(slide, title, category) {
     fontSize: 10, bold: true, color: C_PRIMARY, align: 'center', fontFace: 'Calibri'
   });
 
-  // Título Principal
   slide.addText('StockCommerce', {
     x: 0.8, y: 1.8, w: 11.5, h: 1.2,
     fontSize: 48, bold: true, color: C_TEXT, fontFace: 'Calibri'
   });
 
-  // Subtítulo
-  slide.addText('Plataforma Integral de Gestión de Inventario, POS Multitienda, Logística y Gobierno de Seguridad RBAC', {
+  slide.addText('Plataforma Integral de Gestión de Inventario, POS Multitienda, Logística y Gobernanza de Seguridad RBAC', {
     x: 0.8, y: 3.0, w: 11, h: 0.8,
     fontSize: 18, color: C_TEXT_MUTED, fontFace: 'Calibri'
   });
 
-  // 3 Tarjetas resumen en portada
   const cards = [
     { title: 'Backend Robusto', desc: 'Java 17, Spring Boot 4, JPA, Spring Security 6, JWT, Arquitectura Limpia.', color: C_PRIMARY },
     { title: 'Frontend Moderno', desc: 'Angular 20, Signals Reactivas, Zoneless, PrimeNG Aura, Tailwind v4.', color: C_ACCENT },
-    { title: 'Calidad & Pruebas', desc: '17 Tests de Integración (100% PASS), Validación RBAC y Flujo de Stock.', color: C_AMBER }
+    { title: 'Calidad & Pruebas', desc: '17 Tests de Integración (100% PASS), Validación RBAC y Casos FAIL explicados.', color: C_AMBER }
   ];
 
   cards.forEach((c, idx) => {
@@ -180,7 +173,6 @@ function applySlideDefaults(slide, title, category) {
   const slide = pptx.addSlide();
   applySlideDefaults(slide, 'Modelo de Seguridad RBAC y Gobierno por Alcance', 'Seguridad & Permisos');
 
-  // Tabla con los 5 Roles
   const headers = [
     { text: 'Rol (RolCodigo)', options: { bold: true, color: C_TEXT, fill: { color: '1E293B' }, fontSize: 10 } },
     { text: 'Nivel Riesgo', options: { bold: true, color: C_TEXT, fill: { color: '1E293B' }, fontSize: 10 } },
@@ -192,7 +184,7 @@ function applySlideDefaults(slide, title, category) {
   const rows = [
     [
       { text: 'ADMIN', options: { bold: true, color: C_PRIMARY } },
-      { text: 'ALTO', options: { bold: true, color: 'EF4444' } },
+      { text: 'ALTO', options: { bold: true, color: C_RED } },
       { text: 'GLOBAL (Todas)', options: { color: C_TEXT } },
       { text: 'Control total de usuarios, roles, catálogo maestro, costos y sucursales.', options: { color: C_TEXT_MUTED } },
       { text: 'Ninguna (Superusuario del sistema)', options: { color: C_TEXT_MUTED } }
@@ -240,7 +232,6 @@ function applySlideDefaults(slide, title, category) {
     valign: 'middle'
   });
 
-  // Callout inferior sobre AccessControlService
   slide.addShape(pptx.ShapeType.roundRect, {
     x: 0.8, y: 5.2, w: 11.7, h: 1.6,
     fill: { color: C_CARD_LIGHT }, line: { color: C_PRIMARY, width: 1 }, rectRadius: 0.1
@@ -620,13 +611,106 @@ function applySlideDefaults(slide, title, category) {
 }
 
 // ==========================================
-// SLIDE 9: RESULTADOS Y GARANTÍA DE CALIDAD
+// SLIDE 9: CASOS DE FALLA CONTROLADA (FAIL TESTS) EXPLICADOS
+// ==========================================
+{
+  const slide = pptx.addSlide();
+  applySlideDefaults(slide, 'Casos de Falla Controlada (FAIL Tests) y Justificación', 'Calidad & Negativo Testing');
+
+  slide.addText('En ingeniería de software empresarial, los tests que comprueban fallas deliberadas (Negative Tests) son tan críticos como los exitosos:', {
+    x: 0.8, y: 1.35, w: 11.5, h: 0.35,
+    fontSize: 10.5, color: C_TEXT_MUTED, fontFace: 'Calibri'
+  });
+
+  const failCases = [
+    {
+      num: 'CASO FAIL 1',
+      title: 'Sobreventa sin Stock Suficiente (Anti-Overbooking)',
+      testMethod: 'ventaSinStockSuficienteHaceRollbackCompleto()',
+      scenario: 'Escenario: El inventario cuenta con 5 unidades físicas disponibles. Un cliente en POS o vía API intenta facturar 6 unidades.',
+      result: 'Resultado Backend: Lanza IllegalStateException ("No hay suficiente stock disponible (disponible: 5, solicitado: 6)"). Al estar anotado con @Transactional, Spring revierte el 100% de la operación (ROLLBACK).',
+      why: '¿Por qué DEBE fallar?: Previene inconsistencias contables graves, evita saldos de stock negativos y asegura que jamás se cobre al cliente por mercadería que la empresa no posee.',
+      color: C_RED
+    },
+    {
+      num: 'CASO FAIL 2',
+      title: 'Integridad Referencial: Eliminación con Historial',
+      testMethod: 'noSePuedeEliminarProductoNiTiendaConMovimientos()',
+      scenario: 'Escenario: Un usuario administrador intenta ejecutar DELETE sobre un Producto o Tienda que ya posee entradas, ventas o salidas históricas.',
+      result: 'Resultado Backend: El servicio intercepta la acción antes de base de datos y arroja ConflictException (HTTP 409 Conflict).',
+      why: '¿Por qué DEBE fallar?: Por exigencias legales y de auditoría contable (Kardex). Borrar entidades con movimientos destruiría el historial financiero y dejaría claves huérfanas en la BD.',
+      color: C_AMBER
+    }
+  ];
+
+  failCases.forEach((fc, idx) => {
+    const xPos = 0.8 + idx * 5.9;
+    slide.addShape(pptx.ShapeType.roundRect, {
+      x: xPos, y: 1.75, w: 5.7, h: 3.6,
+      fill: { color: C_CARD }, line: { color: fc.color, width: 1.5 }, rectRadius: 0.12
+    });
+
+    slide.addShape(pptx.ShapeType.roundRect, {
+      x: xPos + 0.25, y: 1.95, w: 1.8, h: 0.35,
+      fill: { color: '2A1B24' }, line: { color: fc.color, width: 1 }, rectRadius: 0.06
+    });
+    slide.addText(fc.num, {
+      x: xPos + 0.25, y: 1.95, w: 1.8, h: 0.35,
+      fontSize: 10, bold: true, color: fc.color, align: 'center', fontFace: 'Calibri'
+    });
+
+    slide.addText(fc.title, {
+      x: xPos + 0.25, y: 2.35, w: 5.2, h: 0.45,
+      fontSize: 12, bold: true, color: C_TEXT, fontFace: 'Calibri'
+    });
+
+    slide.addText('Método: ' + fc.testMethod, {
+      x: xPos + 0.25, y: 2.8, w: 5.2, h: 0.3,
+      fontSize: 9, bold: true, color: C_PRIMARY, fontFace: 'Consolas'
+    });
+
+    const explanation = [
+      { text: fc.scenario + '\n\n', options: { color: C_TEXT_MUTED, fontSize: 9.5 } },
+      { text: fc.result + '\n\n', options: { color: C_TEXT, fontSize: 9.5, bold: false } },
+      { text: fc.why, options: { color: '93C5FD', fontSize: 9.5, bold: true } }
+    ];
+
+    slide.addText(explanation, {
+      x: xPos + 0.25, y: 3.15, w: 5.2, h: 2.05,
+      fontFace: 'Calibri', lineSpacing: 12
+    });
+  });
+
+  slide.addShape(pptx.ShapeType.roundRect, {
+    x: 0.8, y: 5.5, w: 11.7, h: 1.45,
+    fill: { color: C_CARD_LIGHT }, line: { color: C_PRIMARY, width: 1 }, rectRadius: 0.1
+  });
+
+  slide.addText('Otros Casos de Falla Controlada Clave en la Arquitectura:', {
+    x: 1.0, y: 5.6, w: 11.3, h: 0.3,
+    fontSize: 10.5, bold: true, color: C_PRIMARY, fontFace: 'Calibri'
+  });
+
+  const securityFails = [
+    { text: '• FAIL de Rol Incompatible (HTTP 400): ', options: { bold: true, color: C_TEXT } },
+    { text: 'Asignar un Cajero a un Depósito o un Encargado a una Tienda es rechazado para cumplir Separación de Deberes (SoD).\n', options: { color: C_TEXT_MUTED } },
+    { text: '• FAIL de Transacción Abortada y Alerta (AfterCommit): ', options: { bold: true, color: C_TEXT } },
+    { text: 'Si una venta con 2 productos falla en el 2do renglón, toda la venta revierte y NUNCA se emite la notificación de stock bajo del 1er renglón.', options: { color: C_TEXT_MUTED } }
+  ];
+
+  slide.addText(securityFails, {
+    x: 1.0, y: 5.95, w: 11.3, h: 0.9,
+    fontSize: 9.5, fontFace: 'Calibri', lineSpacing: 13
+  });
+}
+
+// ==========================================
+// SLIDE 10: RESULTADOS Y GARANTÍA DE CALIDAD
 // ==========================================
 {
   const slide = pptx.addSlide();
   applySlideDefaults(slide, 'Métricas de Ejecución y Garantía de Calidad', 'Métricas & Validación');
 
-  // 3 Cajas métricas
   const kpis = [
     { val: '17 / 17', label: 'Tests de Integración', sub: '100% aprobados en Spring Boot Test', color: C_ACCENT },
     { val: '0', label: 'Errores en Compilación', sub: 'Angular 20 & Java 17 limpios', color: C_PRIMARY },
@@ -653,7 +737,6 @@ function applySlideDefaults(slide, title, category) {
     });
   });
 
-  // Tarjeta grande de conclusiones de calidad
   slide.addShape(pptx.ShapeType.roundRect, {
     x: 0.8, y: 3.8, w: 11.7, h: 3.0,
     fill: { color: C_CARD }, line: { color: C_BORDER, width: 1 }, rectRadius: 0.12
@@ -682,7 +765,7 @@ function applySlideDefaults(slide, title, category) {
 }
 
 // ==========================================
-// SLIDE 10: DEPLOYMENT Y PUESTA EN MARCHA
+// SLIDE 11: DEPLOYMENT Y PUESTA EN MARCHA
 // ==========================================
 {
   const slide = pptx.addSlide();

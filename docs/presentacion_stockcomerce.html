@@ -54,7 +54,6 @@
       border-bottom: 1px solid #3a506b;
     }
 
-    /* Print styles */
     @media print {
       body {
         overflow: visible;
@@ -87,7 +86,7 @@
       <span class="text-slate-400 text-sm font-medium">| Presentación Técnica de Arquitectura, Clases y Pruebas</span>
     </div>
     <div class="flex items-center space-x-4">
-      <span id="slideIndicator" class="text-sm font-semibold text-slate-300">Diapositiva 1 / 10</span>
+      <span id="slideIndicator" class="text-sm font-semibold text-slate-300">Diapositiva 1 / 11</span>
       <div class="flex items-center space-x-2">
         <button onclick="prevSlide()" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm transition">◀ Anterior</button>
         <button onclick="nextSlide()" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm transition">Siguiente ▶</button>
@@ -131,9 +130,9 @@
 
           <div class="card p-6 border-t-4 border-t-amber-400">
             <div class="text-amber-400 font-bold text-sm mb-1 uppercase tracking-wider">Garantía de Calidad</div>
-            <div class="text-lg font-bold text-white mb-2">17 Tests de Integración</div>
+            <div class="text-lg font-bold text-white mb-2">17 Tests + Casos FAIL</div>
             <p class="text-slate-300 text-sm leading-relaxed">
-              100% de pruebas pasando en entorno Spring Boot Test. Cobertura completa de matriz RBAC, rollbacks ante falta de stock y flujo operativo.
+              100% de pruebas pasando. Cobertura de matriz RBAC, rollbacks ante sobreventa, integridad referencial y casos negativos explicados.
             </p>
           </div>
         </div>
@@ -487,7 +486,7 @@
           </div>
           <div class="card p-2.5 border-l-4 border-l-emerald-400">
             <div class="font-bold text-white">4. notificaSoloAlCruzarElMinimoDe12HaciaAbajo</div>
-            <div class="text-slate-400">Alerta reactiva AfterCommit se genera únicamente cuando el stock cae bajo 12 (12 → 11).</div>
+            <div class="text-slate-400">Alerta reactiva AfterCommit se genera únicamente cuando el stock cruza el umbral (12 → 11).</div>
           </div>
           <div class="card p-2.5 border-l-4 border-l-emerald-400">
             <div class="font-bold text-white">5. ventaFallidaNoGeneraNotificacion</div>
@@ -522,7 +521,64 @@
       </div>
     </section>
 
-    <!-- SLIDE 9: RESULTADOS Y GARANTÍA DE CALIDAD -->
+    <!-- SLIDE 9: CASOS FAIL EXPLICADOS (NUEVA DIAPOSITIVA) -->
+    <section class="slide">
+      <div class="max-w-6xl mx-auto w-full">
+        <span class="text-red-400 font-bold text-xs uppercase tracking-wider">Calidad & Pruebas Negativas</span>
+        <h2 class="text-3xl font-extrabold text-white mt-1 mb-4">Casos de Falla Controlada (FAIL Tests) y Justificación</h2>
+        <p class="text-xs text-slate-400 mb-5">En desarrollo empresarial, las pruebas de casos negativos comprueban que el sistema rechace transacciones inválidas de forma predecible y segura:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+          <!-- CASO FAIL 1 -->
+          <div class="card p-5 border-l-4 border-l-red-500 bg-slate-900/90">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-bold text-xs">CASO FAIL 1</span>
+              <span class="text-xs font-mono text-cyan-400">StockFlowIntegrationTest</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">Sobreventa sin Stock Suficiente (Anti-Overbooking)</h3>
+            <div class="text-xs font-mono text-slate-400 mb-3">Método: ventaSinStockSuficienteHaceRollbackCompleto()</div>
+            
+            <div class="space-y-2 text-xs text-slate-300 leading-relaxed">
+              <p><strong>• Escenario:</strong> Hay 5 unidades en inventario. Un cajero o cliente vía API intenta registrar una venta por 6 unidades.</p>
+              <p><strong>• Qué Ocurre:</strong> El backend arroja <code>IllegalStateException: No hay suficiente stock disponible (disponible: 5, solicitado: 6)</code>. Spring intercepta la excepción en el método <code>@Transactional</code> y ejecuta un <strong class="text-red-400">ROLLBACK TOTAL</strong>.</p>
+              <p class="p-2.5 rounded bg-red-950/40 border border-red-900/50 text-red-200">
+                <strong>¿Por qué DEBE fallar?:</strong> Previene el sobrecupo y que el stock quede en números negativos (-1 u.). Garantiza que jamás se cobre dinero por productos inexistentes y que no queden ventas a medio procesar.
+              </p>
+            </div>
+          </div>
+
+          <!-- CASO FAIL 2 -->
+          <div class="card p-5 border-l-4 border-l-amber-500 bg-slate-900/90">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold text-xs">CASO FAIL 2</span>
+              <span class="text-xs font-mono text-cyan-400">StockFlowIntegrationTest</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">Integridad Referencial: Eliminación con Historial</h3>
+            <div class="text-xs font-mono text-slate-400 mb-3">Método: noSePuedeEliminarProductoNiTiendaConMovimientos()</div>
+            
+            <div class="space-y-2 text-xs text-slate-300 leading-relaxed">
+              <p><strong>• Escenario:</strong> Un usuario intenta ejecutar <code>DELETE</code> sobre un Producto o Tienda que ya cuenta con movimientos registrados (entradas, ventas o salidas).</p>
+              <p><strong>• Qué Ocurre:</strong> El servicio intercepta la operación antes de la base de datos y lanza <strong class="text-amber-400">ConflictException (HTTP 409 Conflict)</strong>.</p>
+              <p class="p-2.5 rounded bg-amber-950/40 border border-amber-900/50 text-amber-200">
+                <strong>¿Por qué DEBE fallar?:</strong> Por exigencias legales y contables (Kardex inmutable). Si se borrara un producto con ventas pasadas, se corromperían los balances financieros y quedarían registros huérfanos. Solo se permite borrar productos libres sin historial.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Otros casos fail -->
+        <div class="card p-3.5 bg-slate-900/60 border-slate-700 text-xs flex items-center justify-between">
+          <div class="text-slate-300">
+            <strong class="text-cyan-400">Otros Casos FAIL Clave:</strong>
+            <span class="ml-2">1. Asignar Cajero a Depósito o Encargado a Tienda comercial → <code>HTTP 400 Bad Request</code> (Separation of Duties).</span>
+            <span class="ml-2">2. Venta fallida en 2do renglón → Rollback total y anulación de alertas reactivas (<code>AFTER_COMMIT</code>).</span>
+          </div>
+          <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 font-bold border border-slate-700">Robustez ACID</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: RESULTADOS Y GARANTÍA DE CALIDAD -->
     <section class="slide">
       <div class="max-w-6xl mx-auto w-full">
         <span class="text-cyan-400 font-bold text-xs uppercase tracking-wider">Métricas & Confiabilidad</span>
@@ -572,7 +628,7 @@
       </div>
     </section>
 
-    <!-- SLIDE 10: DEVOPS Y CONCLUSIONES -->
+    <!-- SLIDE 11: DEVOPS Y CONCLUSIONES -->
     <section class="slide">
       <div class="max-w-6xl mx-auto w-full">
         <span class="text-cyan-400 font-bold text-xs uppercase tracking-wider">DevOps & Puesta en Marcha</span>
