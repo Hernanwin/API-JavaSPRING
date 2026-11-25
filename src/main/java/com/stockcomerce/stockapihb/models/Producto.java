@@ -1,9 +1,6 @@
 package com.stockcomerce.stockapihb.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,9 +14,18 @@ import java.math.BigDecimal;
 public class Producto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
     private String nombre;
     private String categoria;
+    @Column(precision = 15, scale = 2)
     private BigDecimal precio;
+
+    // Costo de compra/reposicion: sensible, oculto a roles sin Permiso.COSTOS_VER (ej. Cajero/Deposito)
+    @Column(precision = 15, scale = 2)
+    private BigDecimal costo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
     // el stock ya no vive aca: ahora es Inventario (Producto + Tienda)
 }

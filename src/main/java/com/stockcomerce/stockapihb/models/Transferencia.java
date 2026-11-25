@@ -28,5 +28,21 @@ public class Transferencia {
     private Tienda tiendaDestino;
 
     private Integer cantidad;
+    private Integer cantidadEnviada;
+    private Integer cantidadRecibida;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private EstadoTransferencia estado = EstadoTransferencia.COMPLETADA;
+
     private LocalDateTime fecha;
+    private LocalDateTime fechaAprobacion;
+    private LocalDateTime fechaEnvio;
+    private LocalDateTime fechaRecepcion;
+
+    private String solicitadoPor;
+    private String aprobadoPor;
+    private String enviadoPor;
+    private String recibidoPor;
+    private String observacion;
 }

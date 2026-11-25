@@ -1,5 +1,6 @@
 package com.stockcomerce.stockapihb.controller;
 
+import jakarta.validation.Valid;
 import com.stockcomerce.stockapihb.dto.EntradaDTO;
 import com.stockcomerce.stockapihb.services.IEntradaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class EntradaController {
     }
 
     @PostMapping
-    public ResponseEntity<EntradaDTO> crear(@RequestBody EntradaDTO entradaDTO) {
+    public ResponseEntity<EntradaDTO> crear(@Valid @RequestBody EntradaDTO entradaDTO) {
         EntradaDTO creado = entradaService.crearEntrada(entradaDTO);
         return ResponseEntity.created(URI.create("/api/entradas/" + creado.getId())).body(creado);
     }

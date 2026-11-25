@@ -1,29 +1,18 @@
 package com.stockcomerce.stockapihb.mapper;
 
-import com.stockcomerce.stockapihb.dto.DetalleVentaDTO;
-import com.stockcomerce.stockapihb.dto.EntradaDTO;
-import com.stockcomerce.stockapihb.dto.InventarioDTO;
-import com.stockcomerce.stockapihb.dto.ProductoDTO;
-import com.stockcomerce.stockapihb.dto.SalidaDTO;
-import com.stockcomerce.stockapihb.dto.TiendaDTO;
-import com.stockcomerce.stockapihb.dto.TransferenciaDTO;
-import com.stockcomerce.stockapihb.dto.VentaDTO;
-import com.stockcomerce.stockapihb.models.DetalleVenta;
-import com.stockcomerce.stockapihb.models.Entrada;
-import com.stockcomerce.stockapihb.models.Inventario;
-import com.stockcomerce.stockapihb.models.Producto;
-import com.stockcomerce.stockapihb.models.Salida;
-import com.stockcomerce.stockapihb.models.Tienda;
-import com.stockcomerce.stockapihb.models.Transferencia;
-import com.stockcomerce.stockapihb.models.Venta;
+import com.stockcomerce.stockapihb.dto.*;
+import com.stockcomerce.stockapihb.models.*;
 
+import java.math.BigDecimal;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Mapper {
-    //mapeo de los models a DTO que es lo que en verdad queremos llamar mediante un uso estatico.
-    //mapeo de Producto a ProductoDTO
+
     public static ProductoDTO prodDTO(Producto p) {
+        return prodDTO(p, true);
+    }
+
+    public static ProductoDTO prodDTO(Producto p, boolean incluirCostos) {
         if (p == null) return null;
 
         return ProductoDTO.builder()
@@ -31,20 +20,45 @@ public class Mapper {
                 .nombre(p.getNombre())
                 .categoria(p.getCategoria())
                 .precio(p.getPrecio())
+                .costo(incluirCostos ? p.getCosto() : null)
+                .idProveedor(p.getProveedor() != null ? p.getProveedor().getId() : null)
+                .nombreProveedor(p.getProveedor() != null ? p.getProveedor().getNombre() : null)
                 .build();
     }
 
     public static InventarioDTO inventDTO(Inventario inv) {
+        return inventDTO(inv, true);
+    }
+
+    public static InventarioDTO inventDTO(Inventario inv, boolean incluirCostos) {
         if (inv == null) return null;
+
+        Producto p = inv.getProducto();
+        Tienda t = inv.getTienda();
+        int cant = inv.getCantidad() != null ? inv.getCantidad() : 0;
+        int res = inv.getCantidadReservada() != null ? inv.getCantidadReservada() : 0;
+
+        BigDecimal costoUnit = (incluirCostos && p != null) ? p.getCosto() : null;
+        BigDecimal valorTotal = (costoUnit != null)
+                ? costoUnit.multiply(BigDecimal.valueOf(cant))
+                : null;
 
         return InventarioDTO.builder()
                 .id(inv.getId())
-                .idProducto(inv.getProducto() != null ? inv.getProducto().getId() : null)
-                .nombreProducto(inv.getProducto() != null ? inv.getProducto().getNombre() : null)
-                .idTienda(inv.getTienda() != null ? inv.getTienda().getId() : null)
-                .nombreTienda(inv.getTienda() != null ? inv.getTienda().getNombre() : null)
-                .cantidad(inv.getCantidad())
+                .idProducto(p != null ? p.getId() : null)
+                .nombreProducto(p != null ? p.getNombre() : null)
+                .idProveedor(p != null && p.getProveedor() != null ? p.getProveedor().getId() : null)
+                .nombreProveedor(p != null && p.getProveedor() != null ? p.getProveedor().getNombre() : null)
+                .idTienda(t != null ? t.getId() : null)
+                .nombreTienda(t != null ? t.getNombre() : null)
+                .tipoUbicacion(t != null ? t.getTipo() : null)
+                .cantidad(cant)
+                .cantidadReservada(res)
+                .cantidadDisponible(inv.getCantidadDisponible())
                 .stockMinimo(inv.getStockMinimo())
+                .precioVenta(p != null ? p.getPrecio() : null)
+                .costoUnitario(costoUnit)
+                .valorCostoTotal(valorTotal)
                 .build();
     }
 
@@ -75,6 +89,9 @@ public class Mapper {
                 .idVenta(s.getVenta() != null ? s.getVenta().getId() : null)
                 .cantidad(s.getCantidad())
                 .fecha(s.getFecha())
+                .motivo(s.getMotivo())
+                .observacion(s.getObservacion())
+                .registradoPor(s.getRegistradoPor())
                 .build();
     }
 
@@ -90,7 +107,18 @@ public class Mapper {
                 .idTiendaDestino(t.getTiendaDestino() != null ? t.getTiendaDestino().getId() : null)
                 .nombreTiendaDestino(t.getTiendaDestino() != null ? t.getTiendaDestino().getNombre() : null)
                 .cantidad(t.getCantidad())
+                .cantidadEnviada(t.getCantidadEnviada())
+                .cantidadRecibida(t.getCantidadRecibida())
+                .estado(t.getEstado())
                 .fecha(t.getFecha())
+                .fechaAprobacion(t.getFechaAprobacion())
+                .fechaEnvio(t.getFechaEnvio())
+                .fechaRecepcion(t.getFechaRecepcion())
+                .solicitadoPor(t.getSolicitadoPor())
+                .aprobadoPor(t.getAprobadoPor())
+                .enviadoPor(t.getEnviadoPor())
+                .recibidoPor(t.getRecibidoPor())
+                .observacion(t.getObservacion())
                 .build();
     }
 
@@ -101,8 +129,10 @@ public class Mapper {
                 .id(t.getId())
                 .nombre(t.getNombre())
                 .direccion(t.getDireccion())
+                .tipo(t.getTipo() != null ? t.getTipo() : TipoUbicacion.TIENDA)
                 .build();
     }
+
     public static VentaDTO ventDTO(Venta venta) {
         if (venta == null) return null;
 
@@ -113,21 +143,53 @@ public class Mapper {
                         .nombreProd(det.getProducto() != null ? det.getProducto().getNombre() : null)
                         .cantidadProd(det.getCantidad())
                         .precioUnitario(det.getPrecioUnitario())
-                        .subtotal(det.getSubtotal() != null ? det.getSubtotal() : 0.0)
+                        .subtotal(det.getSubtotal() != null ? det.getSubtotal() : BigDecimal.ZERO)
                         .build()
         ).collect(Collectors.toList());
 
         var total = detalle.stream()
                 .map(DetalleVentaDTO::getSubtotal)
-                .reduce(0.0, Double::sum);
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return VentaDTO.builder()
                 .id(venta.getId())
                 .fechaHora(venta.getFechaHora())
                 .idTienda(venta.getTienda() != null ? venta.getTienda().getId() : null)
                 .estado(venta.getEstado())
+                .caja(venta.getCaja())
+                .cajeroUsername(venta.getCajeroUsername())
                 .detalle(detalle)
                 .total(total)
+                .build();
+    }
+
+    public static NotificacionDTO notifDTO(Notificacion n) {
+        if (n == null) return null;
+        return NotificacionDTO.builder()
+                .id(n.getId())
+                .tipo(n.getTipo())
+                .idProducto(n.getIdProducto())
+                .nombreProducto(n.getNombreProducto())
+                .idTienda(n.getIdTienda())
+                .nombreTienda(n.getNombreTienda())
+                .cantidadActual(n.getCantidadActual())
+                .stockMinimo(n.getStockMinimo())
+                .mensaje(n.getMensaje())
+                .fecha(n.getFecha())
+                .leida(n.isLeida())
+                .build();
+    }
+
+    public static ProveedorDTO proveedorDTO(Proveedor p) {
+        if (p == null) return null;
+        return ProveedorDTO.builder()
+                .id(p.getId())
+                .nombre(p.getNombre())
+                .identificacionFiscal(p.getIdentificacionFiscal())
+                .contacto(p.getContacto())
+                .email(p.getEmail())
+                .telefono(p.getTelefono())
+                .activo(p.isActivo())
                 .build();
     }
 }

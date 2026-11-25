@@ -1,5 +1,6 @@
 package com.stockcomerce.stockapihb.controller;
 
+import jakarta.validation.Valid;
 import com.stockcomerce.stockapihb.dto.TiendaDTO;
 import com.stockcomerce.stockapihb.dto.VentaDTO;
 import com.stockcomerce.stockapihb.services.IVentaService;
@@ -23,7 +24,7 @@ public class VentaController {
     }
 
     @PostMapping
-    public ResponseEntity<VentaDTO> create(@RequestBody VentaDTO ventaDTO) {
+    public ResponseEntity<VentaDTO> create(@Valid @RequestBody VentaDTO ventaDTO) {
         VentaDTO created = ventaService.crearVenta(ventaDTO);
         return ResponseEntity.created(URI.create("/api/ventas/" + created.getId())).body(created);
     }

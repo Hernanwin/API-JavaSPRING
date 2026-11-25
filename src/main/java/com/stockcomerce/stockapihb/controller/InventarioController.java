@@ -1,5 +1,6 @@
 package com.stockcomerce.stockapihb.controller;
 
+import com.stockcomerce.stockapihb.dto.InventarioConsolidadoDTO;
 import com.stockcomerce.stockapihb.dto.InventarioDTO;
 import com.stockcomerce.stockapihb.services.IInventarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Solo lectura: el stock no se edita a mano aca, se mueve por /api/entradas, /api/salidas, /api/transferencias
 @RestController
 @RequestMapping("/api/inventario")
 public class InventarioController {
@@ -19,6 +19,17 @@ public class InventarioController {
     @GetMapping
     public ResponseEntity<List<InventarioDTO>> mostrarInventario() {
         return ResponseEntity.ok(inventarioService.mostrarInventario());
+    }
+
+    @GetMapping("/consolidado")
+    public ResponseEntity<List<InventarioConsolidadoDTO>> consolidado(
+            @RequestParam(required = false) Long idProveedor) {
+        return ResponseEntity.ok(inventarioService.mostrarConsolidado(idProveedor));
+    }
+
+    @GetMapping("/proveedor/{idProveedor}")
+    public ResponseEntity<List<InventarioDTO>> porProveedor(@PathVariable Long idProveedor) {
+        return ResponseEntity.ok(inventarioService.mostrarPorProveedor(idProveedor));
     }
 
     @GetMapping("/tienda/{idTienda}")
@@ -44,4 +55,3 @@ public class InventarioController {
         return ResponseEntity.ok(inventarioService.actualizarStockMinimo(idProducto, idTienda, stockMinimo));
     }
 }
-

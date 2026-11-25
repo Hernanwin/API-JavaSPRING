@@ -12,7 +12,12 @@ public interface ISalidaService {
     List<SalidaDTO> mostrarSalidas();
     List<SalidaDTO> mostrarPorVenta(Long idVenta);
 
-    // se llama desde VentaService al crear una venta (fase 4); no hay POST publico
-    // porque, por ahora, el unico motivo de Salida es VENTA.
+    // Salida manual/operativa de deposito (merma, rotura, despacho, consumo interno)
+    SalidaDTO crearSalidaManual(SalidaDTO dto);
+
+    // Salida automatica originada al cobrar una Venta en POS
     Salida registrarSalidaPorVenta(Venta venta, Producto producto, Tienda tienda, int cantidad);
+
+    void revertirSalidasDeVenta(Venta venta);
+    void reasignarTiendaDeVenta(Venta venta, Tienda nuevaTienda);
 }

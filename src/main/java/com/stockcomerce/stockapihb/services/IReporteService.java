@@ -1,19 +1,19 @@
 package com.stockcomerce.stockapihb.services;
 
-import com.stockcomerce.stockapihb.dto.InventarioDTO;
-import com.stockcomerce.stockapihb.dto.MovimientoDTO;
-import com.stockcomerce.stockapihb.dto.ResumenStockTiendaDTO;
+import com.stockcomerce.stockapihb.dto.*;
 
 import java.util.List;
 
 public interface IReporteService {
-    // filas de Inventario donde cantidad <= stockMinimo
     List<InventarioDTO> stockBajo();
-
-    // total de unidades y de productos distintos, agrupado por tienda
     List<ResumenStockTiendaDTO> resumenPorTienda();
+    List<MovimientoDTO> historialMovimientos(Long idProducto, Long idTienda, Integer page, Integer size);
 
-    // historial combinado de Entrada + Salida + Transferencia, mas reciente primero.
-    // idProducto e idTienda son opcionales (null = sin filtrar por ese campo).
-    List<MovimientoDTO> historialMovimientos(Long idProducto, Long idTienda);
+    // Supervisor de compras / Admin
+    List<ReporteMargenProductoDTO> reporteMargenes(Long idProveedor, Long idTienda);
+    List<ReporteRotacionDTO> reporteRotacion(Long idTienda, Long idProveedor, Integer dias);
+    List<ReporteCumplimientoRecepcionDTO> reporteCumplimientoRecepcion(Long idProveedor, Long idTienda);
+
+    // Restringido estrictamente a direccion/administracion financiera (Permiso.REPORTE_FINANCIERO_CONSOLIDADO_VER)
+    ReporteFinancieroConsolidadoDTO reporteFinancieroConsolidado();
 }

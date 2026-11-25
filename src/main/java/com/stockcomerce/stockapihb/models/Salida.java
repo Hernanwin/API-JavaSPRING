@@ -23,12 +23,15 @@ public class Salida {
     @JoinColumn(name = "tienda_id")
     private Tienda tienda;
 
-    // unico motivo por ahora: la venta que genero esta salida
+    // Si proviene de POS apunta a la Venta; si es salida operativa de deposito es null
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venta_id")
     private Venta venta;
 
     private Integer cantidad;
     private LocalDateTime fecha;
+    private String motivo; // VENTA, MERMA, ROTURA, CONSUMO_INTERNO, DESPACHO, etc.
+    private String observacion;
+    private String registradoPor;
 }
 
