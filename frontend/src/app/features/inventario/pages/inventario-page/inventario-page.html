@@ -1,0 +1,301 @@
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <app-flujo-sistema [activeStep]="[2]" />
+
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="flex bg-surface-900 border border-surface-800 rounded-lg p-1 gap-1">
+      <button
+        type="button"
+        (click)="vistaActiva.set('ubicacion')"
+        class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+        [class]="vistaActiva() === 'ubicacion' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+      >
+        Por Ubicación
+      </button>
+
+      @if (store.puedeVerConsolidado()) {
+        <button
+          type="button"
+          (click)="vistaActiva.set('consolidado')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="vistaActiva() === 'consolidado' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Consolidado / Proveedor
+        </button>
+      }
+
+      @if (store.puedeVerConteos()) {
+        <button
+          type="button"
+          (click)="vistaActiva.set('conteos')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="vistaActiva() === 'conteos' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Ajustes por Conteo
+        </button>
+      }
+    </div>
+
+    @if (store.puedeEjecutarConteo()) {
+      <p-button
+        label="Registrar conteo físico"
+        icon="pi pi-check-square"
+        severity="info"
+        (onClick)="abrirNuevoConteo()"
+      />
+    }
+  </div>
+</div>
+
+<div class="my-5">
+  <app-kpi-cards
+    [unidadesEnStock]="store.unidadesEnStock()"
+    [etiquetaAlcance]="store.etiquetaAlcance()"
+    [valorInventario]="store.valorInventario()"
+    etiquetaValor="Valor inventario al costo"
+    [alertasStockBajo]="store.alertasStockBajo()"
+    [ventasHoy]="store.ventasHoy()"
+    [variacionVentas]="store.variacionVentas()"
+  />
+</div>
+
+@if (vistaActiva() === 'ubicacion') {
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+    <div class="lg:col-span-2">
+      <app-inventario-tabla
+        [items]="store.inventarioFiltrado()"
+        [cargando]="store.cargando()"
+        [editable]="true"
+        (editarMinimo)="abrirEdicionMinimo($event)"
+      />
+    </div>
+    <app-movimientos-panel [items]="store.movimientosFiltrados()" />
+  </div>
+}
+
+@if (vistaActiva() === 'consolidado' && store.puedeVerConsolidado()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4 mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <div>
+        <h2 class="font-medium text-surface-100">Inventario Consolidado Multi-Sucursal</h2>
+        <p class="text-xs text-surface-400">
+          Visión global agregada por SKU y proveedor para abastecimiento y compras.
+        </p>
+      </div>
+
+      <p-select
+        [options]="opcionesProveedor()"
+        optionLabel="nombre"
+        optionValue="id"
+        [ngModel]="store.idProveedorFiltro()"
+        (ngModelChange)="store.filtrarProveedorConsolidado($event)"
+        placeholder="Filtrar por proveedor"
+        styleClass="w-64"
+      />
+    </div>
+
+    <p-table [value]="store.consolidado()" [loading]="store.cargando()" dataKey="idProducto">
+      <ng-template #header>
+        <tr>
+          <th class="w-16">SKU</th>
+          <th>Producto</th>
+          <th>Proveedor</th>
+          <th class="text-right">Ubicaciones</th>
+          <th class="text-right">Físico Total</th>
+          <th class="text-right">Reservado</th>
+          <th class="text-right">Disponible</th>
+          @if (store.puedeVerCostos()) {
+            <th class="text-right">Costo Unit.</th>
+            <th class="text-right">Valor Costo Total</th>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-c>
+        <tr>
+          <td class="font-mono text-xs text-surface-400">#{{ c.idProducto }}</td>
+          <td class="font-medium text-surface-100">{{ c.nombreProducto }}</td>
+          <td class="text-sm text-surface-300">{{ c.nombreProveedor || 'Sin asignar' }}</td>
+          <td class="text-right font-mono text-xs text-surface-300">{{ c.ubicacionesConStock }}</td>
+          <td class="text-right font-mono">{{ c.totalUnidades }}</td>
+          <td class="text-right font-mono text-amber-400">{{ c.totalReservadas }}</td>
+          <td class="text-right font-semibold text-green-400">{{ c.totalDisponibles }}</td>
+          @if (store.puedeVerCostos()) {
+            <td class="text-right font-mono text-xs text-surface-300">
+              {{ c.costoUnitario != null ? ('$ ' + (c.costoUnitario | number: '1.2-2')) : '—' }}
+            </td>
+            <td class="text-right font-semibold text-surface-100">
+              {{ c.valorTotalCosto != null ? ('$ ' + (c.valorTotalCosto | number: '1.0-0')) : '—' }}
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="9" class="text-center text-surface-500 py-6">
+            No hay existencias consolidadas para el proveedor seleccionado.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+@if (vistaActiva() === 'conteos' && store.puedeVerConteos()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4 mb-5">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h2 class="font-medium text-surface-100">Bitácora de Ajustes por Conteo Físico</h2>
+        <p class="text-xs text-surface-400">
+          Auditoría de diferencias detectadas en depósito/inventario con trazabilidad de responsable.
+        </p>
+      </div>
+      <span class="text-xs text-surface-500">{{ store.ajustes().length }} conteos</span>
+    </div>
+
+    <p-table [value]="store.ajustes()" [loading]="store.cargando()" dataKey="id">
+      <ng-template #header>
+        <tr>
+          <th>Fecha</th>
+          <th>Ubicación</th>
+          <th>Producto</th>
+          <th class="text-right">Stock Sistema</th>
+          <th class="text-right">Contado</th>
+          <th class="text-right">Diferencia</th>
+          <th>Motivo</th>
+          <th>Responsable</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-a>
+        <tr>
+          <td class="text-xs text-surface-400">{{ a.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td class="text-surface-200">{{ a.nombreTienda }}</td>
+          <td class="font-medium text-surface-100">{{ a.nombreProducto }}</td>
+          <td class="text-right font-mono text-surface-400">{{ a.cantidadSistemaAnterior }}</td>
+          <td class="text-right font-mono font-semibold text-surface-100">{{ a.cantidadContada }}</td>
+          <td class="text-right">
+            <p-tag
+              [value]="(a.diferencia >= 0 ? '+' : '') + a.diferencia"
+              [severity]="a.diferencia === 0 ? 'secondary' : a.diferencia > 0 ? 'success' : 'danger'"
+            />
+          </td>
+          <td class="text-xs text-surface-300">{{ a.motivo }}</td>
+          <td class="text-xs font-mono text-surface-400">&#64;{{ a.ejecutadoPor }}</td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center text-surface-500 py-6">
+            No se registraron ajustes por conteo en las ubicaciones visibles.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+<app-reposicion-panel [items]="store.stockBajoFiltrado()" />
+
+<!-- Dialog: Configurar Stock Mínimo -->
+<p-dialog
+  [visible]="dialogMinimoVisible()"
+  (visibleChange)="dialogMinimoVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '26rem' }"
+  header="Configurar stock mínimo"
+>
+  @if (itemEditando(); as item) {
+    <form [formGroup]="formMinimo" (ngSubmit)="guardarMinimo()" class="flex flex-col gap-4 pt-2">
+      <div class="text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-lg p-3">
+        <p class="font-semibold text-slate-950">{{ item.nombreProducto }}</p>
+        <p class="text-xs font-medium text-slate-800 mt-0.5">
+          Ubicación: {{ item.nombreTienda }} · Stock físico: {{ item.cantidad }} u.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="stockMinimo" class="text-sm font-semibold text-slate-900">
+          Umbral de alerta (por defecto 12)
+        </label>
+        <p-inputnumber
+          inputId="stockMinimo"
+          formControlName="stockMinimo"
+          [min]="0"
+          [showButtons]="true"
+        />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <p-button
+          label="Cancelar"
+          severity="secondary"
+          [text]="true"
+          type="button"
+          (onClick)="dialogMinimoVisible.set(false)"
+        />
+        <p-button label="Guardar" type="submit" />
+      </div>
+    </form>
+  }
+</p-dialog>
+
+<!-- Dialog: Registrar Ajuste por Conteo Físico -->
+<p-dialog
+  [visible]="dialogConteoVisible()"
+  (visibleChange)="dialogConteoVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  header="Ajuste de Inventario por Conteo Físico"
+>
+  <form [formGroup]="formConteo" (ngSubmit)="guardarConteo()" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Depósito / Ubicación autorizada</label>
+      <p-select
+        [options]="store.ubicacionesParaConteo()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idTienda"
+        placeholder="Seleccionar depósito"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Producto contado</label>
+      <p-select
+        [options]="store.productos()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idProducto"
+        placeholder="Seleccionar producto"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Cantidad física real contada</label>
+      <p-inputnumber formControlName="cantidadContada" [min]="0" [showButtons]="true" />
+      <span class="text-xs font-medium text-slate-800">
+        El sistema calculará automáticamente la diferencia contra el saldo teórico actual.
+      </span>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Motivo / Referencia de acta</label>
+      <input pInputText formControlName="motivo" placeholder="Ej. CONTEO_CICLICO_MENSUAL" />
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button
+        label="Cancelar"
+        severity="secondary"
+        [text]="true"
+        type="button"
+        (onClick)="dialogConteoVisible.set(false)"
+      />
+      <p-button label="Aplicar ajuste" severity="info" type="submit" />
+    </div>
+  </form>
+</p-dialog>

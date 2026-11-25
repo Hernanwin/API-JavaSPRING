@@ -1,0 +1,476 @@
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <app-flujo-sistema [activeStep]="[3]" />
+
+  <div class="flex flex-wrap items-center gap-2">
+    @if (store.puedeEntrada()) {
+      <p-button
+        label="Registrar Entrada"
+        icon="pi pi-arrow-down"
+        severity="success"
+        (onClick)="abrirEntrada()"
+      />
+    }
+
+    @if (store.puedeSalidaManual()) {
+      <p-button
+        label="Salida Operativa"
+        icon="pi pi-arrow-up"
+        severity="warn"
+        (onClick)="abrirSalida()"
+      />
+    }
+
+    @if (store.puedeSolicitarTransf()) {
+      <p-button
+        label="Solicitar Transferencia"
+        icon="pi pi-arrow-right-arrow-left"
+        severity="info"
+        (onClick)="abrirTransferencia()"
+      />
+    }
+  </div>
+</div>
+
+<div class="my-5">
+  <app-kpi-cards
+    [unidadesEnStock]="store.unidadesEnStock()"
+    [etiquetaAlcance]="store.etiquetaAlcance()"
+    [valorInventario]="store.valorInventario()"
+    etiquetaValor="Valor inventario al costo"
+    [alertasStockBajo]="store.alertasStockBajo()"
+    [ventasHoy]="store.ventasHoy()"
+    [variacionVentas]="store.variacionVentas()"
+  />
+</div>
+
+<!-- Bandeja de Transferencias: Solicitud -> Aprobación -> Envío -> Recepción -->
+<div class="bg-surface-900 border border-surface-800 rounded-xl p-4 mb-5">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div>
+      <h2 class="font-medium text-surface-100">Tareas de Transferencia, Envío y Recepción</h2>
+      <p class="text-xs text-surface-400">
+        Segregación de funciones: Compras aprueba · Depósito origen despacha · Ubicación destino confirma recepción.
+      </p>
+    </div>
+
+    <p-select
+      [options]="opcionesEstadoTransferencia"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="store.estadoTransfFiltro()"
+      (ngModelChange)="store.filtrarEstadoTransferencia($event)"
+      styleClass="w-72"
+    />
+  </div>
+
+  <p-table [value]="store.transferenciasVisibles()" [loading]="store.cargando()" dataKey="id">
+    <ng-template #header>
+      <tr>
+        <th class="w-16">#</th>
+        <th>Producto</th>
+        <th>Ruta (Origen → Destino)</th>
+        <th class="text-right">Solicitado / Recibido</th>
+        <th>Estado</th>
+        <th>Trazabilidad</th>
+        <th class="text-right">Acciones según tu Rol</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-t>
+      <tr>
+        <td class="font-mono text-xs text-surface-400">#{{ t.id }}</td>
+        <td class="font-medium text-surface-100">{{ t.nombreProducto }}</td>
+        <td class="text-sm text-surface-300">
+          {{ t.nombreTiendaOrigen }}
+          <span class="text-primary-400 font-medium"> → {{ t.nombreTiendaDestino }}</span>
+        </td>
+        <td class="text-right font-mono text-sm">
+          {{ t.cantidad }}
+          @if (t.cantidadRecibida != null) {
+            <span class="text-xs text-green-400"> (recib: {{ t.cantidadRecibida }})</span>
+          }
+        </td>
+        <td>
+          <p-tag [value]="t.estado" [severity]="severidadEstadoTransf(t.estado)" />
+        </td>
+        <td class="text-xs text-surface-400">
+          @if (t.solicitadoPor) {
+            <span>Sol: &#64;{{ t.solicitadoPor }}</span>
+          }
+          @if (t.aprobadoPor) {
+            <span> · Apr: &#64;{{ t.aprobadoPor }}</span>
+          }
+          @if (t.recibidoPor) {
+            <span> · Rec: &#64;{{ t.recibidoPor }}</span>
+          }
+        </td>
+        <td>
+          <div class="flex items-center justify-end gap-1.5">
+            @if (t.estado === 'SOLICITADA' && store.puedeAprobarTransf()) {
+              <p-button
+                label="Aprobar"
+                icon="pi pi-check"
+                size="small"
+                severity="success"
+                (onClick)="aprobar(t)"
+              />
+              <p-button
+                icon="pi pi-times"
+                size="small"
+                severity="danger"
+                [outlined]="true"
+                title="Rechazar solicitud"
+                (onClick)="rechazar(t)"
+              />
+            }
+
+            @if (store.puedeDespachar(t)) {
+              <p-button
+                label="Despachar envío"
+                icon="pi pi-send"
+                size="small"
+                severity="info"
+                (onClick)="despachar(t)"
+              />
+            }
+
+            @if (store.puedeRecibir(t)) {
+              <p-button
+                label="Confirmar recepción"
+                icon="pi pi-box"
+                size="small"
+                severity="warn"
+                (onClick)="abrirRecepcion(t)"
+              />
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="7" class="text-center text-surface-500 py-6">
+          No hay transferencias registradas para tu alcance o filtro seleccionado.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Historial paginado de movimientos -->
+@if (store.puedeHistorial()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4 mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <div>
+        <h2 class="font-medium text-surface-100">Historial auditado de movimientos</h2>
+        <p class="text-xs text-surface-400">
+          Entradas, salidas, ajustes por conteo y transferencias filtradas automáticamente a tus ubicaciones.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <p-select
+          [options]="opcionesFiltroProducto()"
+          optionLabel="nombre"
+          optionValue="id"
+          [ngModel]="store.idProductoFiltro()"
+          (ngModelChange)="store.filtrarPorProducto($event)"
+          placeholder="Filtrar por producto"
+          styleClass="w-56"
+        />
+
+        <p-select
+          [options]="tamanosPagina"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="store.size()"
+          (ngModelChange)="store.cambiarTamanoPagina($event)"
+          styleClass="w-40"
+        />
+      </div>
+    </div>
+
+    <p-table [value]="store.movimientosHistorial()" [loading]="store.cargando()">
+      <ng-template #header>
+        <tr>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Ubicación / Ruta</th>
+          <th class="text-right">Cantidad</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-m>
+        <tr>
+          <td>
+            <p-tag [value]="m.tipo" [severity]="severidadTipo(m.tipo)" />
+          </td>
+          <td class="text-sm text-surface-300">{{ m.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td class="font-medium">{{ m.nombreProducto }}</td>
+          <td class="text-surface-300">
+            {{ m.nombreTienda }}
+            @if (m.nombreTiendaDestino) {
+              <span class="text-primary-400 font-medium"> → {{ m.nombreTiendaDestino }}</span>
+            }
+          </td>
+          <td class="text-right font-mono font-medium">
+            {{ m.tipo === 'ENTRADA' ? '+' : m.tipo === 'SALIDA' ? '-' : m.tipo === 'TRANSFERENCIA' ? '↔ ' : '' }}{{ m.cantidad }}
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="5" class="text-center text-surface-500 py-6">
+            Sin movimientos registrados en esta página.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <div class="flex items-center justify-between mt-3 pt-3 border-t border-surface-800">
+      <span class="text-xs text-surface-400">Página {{ store.page() + 1 }}</span>
+      <div class="flex items-center gap-2">
+        <p-button
+          label="Anterior"
+          icon="pi pi-chevron-left"
+          size="small"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="store.page() === 0"
+          (onClick)="store.cambiarPagina(store.page() - 1)"
+        />
+        <p-button
+          label="Siguiente"
+          icon="pi pi-chevron-right"
+          iconPos="right"
+          size="small"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="store.movimientosHistorial().length < store.size()"
+          (onClick)="store.cambiarPagina(store.page() + 1)"
+        />
+      </div>
+    </div>
+  </div>
+}
+
+<app-reposicion-panel [items]="store.stockBajoFiltrado()" />
+
+<!-- Dialog: Nueva Entrada -->
+<p-dialog
+  [visible]="entradaVisible()"
+  (visibleChange)="entradaVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  header="Registrar Entrada de Mercadería"
+>
+  <form [formGroup]="formEntrada" (ngSubmit)="guardarEntrada()" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Producto</label>
+      <p-select
+        [options]="store.productos()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idProducto"
+        placeholder="Seleccionar producto"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Ubicación autorizada</label>
+      <p-select
+        [options]="store.ubicacionesEntrada()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idTienda"
+        placeholder="Seleccionar depósito/ubicación"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Cantidad</label>
+      <p-inputnumber formControlName="cantidad" [min]="1" [showButtons]="true" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Observación / Remito</label>
+      <input pInputText formControlName="observacion" placeholder="Ej. Ingreso remito #0042" />
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="entradaVisible.set(false)" />
+      <p-button label="Registrar entrada" severity="success" type="submit" />
+    </div>
+  </form>
+</p-dialog>
+
+<!-- Dialog: Salida Operativa -->
+<p-dialog
+  [visible]="salidaVisible()"
+  (visibleChange)="salidaVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  header="Registrar Salida Operativa de Depósito"
+>
+  <form [formGroup]="formSalida" (ngSubmit)="guardarSalida()" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Ubicación autorizada</label>
+      <p-select
+        [options]="store.ubicacionesSalidaManual()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idTienda"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Producto</label>
+      <p-select
+        [options]="store.productos()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idProducto"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Motivo</label>
+        <p-select
+          [options]="motivosSalida"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="motivo"
+          appendTo="body"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Cantidad</label>
+        <p-inputnumber formControlName="cantidad" [min]="1" [showButtons]="true" />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Observación</label>
+      <input pInputText formControlName="observacion" placeholder="Detalle del egreso operativo" />
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="salidaVisible.set(false)" />
+      <p-button label="Confirmar salida" severity="warn" type="submit" />
+    </div>
+  </form>
+</p-dialog>
+
+<!-- Dialog: Solicitar Transferencia -->
+<p-dialog
+  [visible]="transferenciaVisible()"
+  (visibleChange)="transferenciaVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '30rem' }"
+  header="Solicitar Transferencia entre Ubicaciones"
+>
+  <form [formGroup]="formTransferencia" (ngSubmit)="guardarSolicitudTransferencia()" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Producto</label>
+      <p-select
+        [options]="store.productos()"
+        optionLabel="nombre"
+        optionValue="id"
+        formControlName="idProducto"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Origen</label>
+        <p-select
+          [options]="store.catalogoDestinos()"
+          optionLabel="nombre"
+          optionValue="id"
+          formControlName="idTiendaOrigen"
+          appendTo="body"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Destino</label>
+        <p-select
+          [options]="store.catalogoDestinos()"
+          optionLabel="nombre"
+          optionValue="id"
+          formControlName="idTiendaDestino"
+          appendTo="body"
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Cantidad solicitada</label>
+      <p-inputnumber formControlName="cantidad" [min]="1" [showButtons]="true" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Observación</label>
+      <input pInputText formControlName="observacion" placeholder="Ej. Abastecimiento semanal de tienda" />
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="transferenciaVisible.set(false)" />
+      <p-button label="Enviar solicitud" severity="info" type="submit" />
+    </div>
+  </form>
+</p-dialog>
+
+<!-- Dialog: Confirmar Recepción de Transferencia -->
+<p-dialog
+  [visible]="recepcionVisible()"
+  (visibleChange)="recepcionVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  header="Confirmar Recepción en Destino"
+>
+  @if (transferenciaRecibiendo(); as tr) {
+    <form [formGroup]="formRecepcion" (ngSubmit)="confirmarRecepcion()" class="flex flex-col gap-4 pt-2">
+      <div class="p-3 rounded-lg bg-slate-50 border border-slate-300 text-xs text-slate-900">
+        <p class="font-semibold text-sm text-slate-950">{{ tr.nombreProducto }}</p>
+        <p class="mt-1">
+          Desde <span class="font-semibold text-slate-950">{{ tr.nombreTiendaOrigen }}</span> →
+          Recibe <span class="text-emerald-800 font-semibold">{{ tr.nombreTiendaDestino }}</span>
+        </p>
+        <p class="mt-0.5 text-slate-800">
+          Unidades despachadas: <span class="font-mono font-bold text-slate-950">{{ tr.cantidadEnviada ?? tr.cantidad }}</span>
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Unidades efectivamente recibidas</label>
+        <p-inputnumber
+          formControlName="cantidadRecibida"
+          [min]="0"
+          [max]="tr.cantidadEnviada ?? tr.cantidad"
+          [showButtons]="true"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Observación de conformidad</label>
+        <input pInputText formControlName="observacion" placeholder="Ej. Recibido conforme / Diferencia en bulto" />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="recepcionVisible.set(false)" />
+        <p-button label="Ingresar mercadería" severity="success" type="submit" />
+      </div>
+    </form>
+  }
+</p-dialog>

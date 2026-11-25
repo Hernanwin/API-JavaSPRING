@@ -1,0 +1,117 @@
+<div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+  <div class="flex items-center justify-between mb-3">
+    <div>
+      <h2 class="font-medium text-surface-100">Existencias por ubicación</h2>
+      <p class="text-xs text-surface-400">
+        Filtra automáticamente sucursales/depósitos asignados. Los apartados descuentan stock disponible.
+      </p>
+    </div>
+    <span class="text-xs text-surface-500">{{ items().length }} registros</span>
+  </div>
+
+  <p-table [value]="items()" [loading]="cargando()" dataKey="id">
+    <ng-template #header>
+      <tr>
+        <th class="w-16">SKU</th>
+        <th>Producto</th>
+        <th>Ubicación</th>
+        <th class="text-right">Físico</th>
+        <th class="text-right">Apartado</th>
+        <th class="text-right">Disponible</th>
+        <th class="text-right">Mínimo</th>
+        @if (authStore.puedeVerCostos()) {
+          <th class="text-right">Costo Unit.</th>
+          <th class="text-right">Valor Costo</th>
+        }
+        <th>Nivel</th>
+        @if (editable()) {
+          <th class="w-14"></th>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-item>
+      <tr>
+        <td class="font-mono text-xs text-surface-400">#{{ item.idProducto }}</td>
+        <td>
+          <p class="font-medium text-surface-100">{{ item.nombreProducto }}</p>
+          @if (item.nombreProveedor) {
+            <p class="text-[11px] text-surface-500">{{ item.nombreProveedor }}</p>
+          }
+        </td>
+        <td>
+          <div class="flex items-center gap-1.5">
+            <span class="text-surface-300">{{ item.nombreTienda }}</span>
+            @if (item.tipoUbicacion) {
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-800 text-surface-400">
+                {{ item.tipoUbicacion === 'DEPOSITO' ? 'DEP' : 'POS' }}
+              </span>
+            }
+          </div>
+        </td>
+        <td class="text-right font-mono text-surface-300">{{ item.cantidad }}</td>
+        <td class="text-right font-mono text-xs" [class]="(item.cantidadReservada || 0) > 0 ? 'text-amber-400' : 'text-surface-500'">
+          {{ item.cantidadReservada ?? 0 }}
+        </td>
+        <td class="text-right font-semibold text-surface-50">
+          {{ item.cantidadDisponible ?? item.cantidad }}
+        </td>
+        <td class="text-right text-surface-400 font-mono text-xs">
+          {{ item.stockMinimo ?? stockMinimoPorDefecto }}
+        </td>
+        @if (authStore.puedeVerCostos()) {
+          <td class="text-right font-mono text-xs text-surface-300">
+            @if (item.costoUnitario != null) {
+              $ {{ item.costoUnitario | number: '1.2-2' }}
+            } @else {
+              —
+            }
+          </td>
+          <td class="text-right font-mono text-xs text-surface-200">
+            @if (item.valorCostoTotal != null) {
+              $ {{ item.valorCostoTotal | number: '1.0-0' }}
+            } @else {
+              —
+            }
+          </td>
+        }
+        <td>
+          <div class="flex items-center gap-2">
+            <p-progressbar
+              [value]="nivelPorcentaje(item.cantidad, item.stockMinimo)"
+              [showValue]="false"
+              [style]="{ height: '6px', width: '5rem' }"
+              [color]="estaBajo(item.cantidad, item.stockMinimo) ? '#f87171' : '#4ade80'"
+            />
+            <p-tag
+              [value]="estaBajo(item.cantidad, item.stockMinimo) ? 'BAJO' : 'OK'"
+              [severity]="estaBajo(item.cantidad, item.stockMinimo) ? 'danger' : 'success'"
+            />
+          </div>
+        </td>
+        @if (editable()) {
+          <td class="text-right">
+            @if (puedeConfigurarMinimo(item)) {
+              <p-button
+                icon="pi pi-sliders-h"
+                size="small"
+                severity="secondary"
+                [text]="true"
+                title="Cambiar stock mínimo"
+                (onClick)="editarMinimo.emit(item)"
+              />
+            }
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="11" class="text-center text-surface-500 py-6">
+          Sin inventario registrado para tu alcance o filtro actual.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

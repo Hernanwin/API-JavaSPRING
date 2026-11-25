@@ -1,0 +1,113 @@
+<div class="min-h-screen bg-slate-100 text-slate-900 flex items-center justify-center p-6">
+  <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-5 bg-white border border-slate-300 rounded-2xl overflow-hidden shadow-xl">
+    <!-- Panel informativo de arquitectura de roles -->
+    <div class="md:col-span-2 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-7 flex flex-col justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800">
+            <i class="pi pi-shield text-lg"></i>
+          </div>
+          <div>
+            <p class="font-bold text-slate-950 leading-tight">Stockcomerce</p>
+            <p class="text-[11px] font-semibold text-slate-700 tracking-wider uppercase">Control por Riesgo y Alcance</p>
+          </div>
+        </div>
+
+        <p class="text-sm text-slate-800 leading-relaxed mb-5">
+          Los permisos y vistas de datos se ajustan automáticamente según tus responsabilidades operativas y las ubicaciones asignadas.
+        </p>
+
+        <div class="flex flex-col gap-2.5 text-xs">
+          <div class="p-3 rounded-lg bg-white border border-slate-300">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-slate-950">Encargado de Depósito</span>
+              <p-tag value="DEPÓSITOS" severity="info" />
+            </div>
+            <p class="text-slate-800">Entradas, salidas, conteos físicos y envío/recepción sin modificar precios.</p>
+          </div>
+
+          <div class="p-3 rounded-lg bg-white border border-slate-300">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-slate-950">Cajero / Vendedor</span>
+              <p-tag value="POS TIENDA" severity="success" />
+            </div>
+            <p class="text-slate-800">Cobros en su caja, stock disponible sin costos y gestión de apartados.</p>
+          </div>
+
+          <div class="p-3 rounded-lg bg-white border border-slate-300">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-slate-950">Supervisor de Compras</span>
+              <p-tag value="GLOBAL" severity="warn" />
+            </div>
+            <p class="text-slate-800">Inventario consolidado, aprobación de OC/transferencias y márgenes.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-800 flex items-center justify-between border-t border-slate-300 pt-3">
+        <span class="font-medium">Autenticación JWT HS256</span>
+        <button
+          type="button"
+          (click)="completarDemoAdmin()"
+          class="font-semibold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+        >
+          Usar admin inicial
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulario de ingreso -->
+    <div class="md:col-span-3 p-8 flex flex-col justify-center bg-white form-panel-claro">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-950">Iniciar sesión</h1>
+        <p class="text-sm text-slate-800 mt-1">
+          Ingresá tus credenciales para cargar tus sucursales, depósitos y permisos habilitados.
+        </p>
+      </div>
+
+      @if (errorLocal(); as err) {
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-300 text-xs font-medium text-red-900 flex items-center gap-2">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>{{ err }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="ingresar()" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label for="username" class="text-sm font-semibold text-slate-950">Usuario</label>
+          <input
+            id="username"
+            pInputText
+            formControlName="username"
+            placeholder="Ej. admin, cajero_centro, deposito_norte"
+            autocomplete="username"
+            class="w-full"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="password" class="text-sm font-semibold text-slate-950">Contraseña</label>
+          <p-password
+            inputId="password"
+            formControlName="password"
+            [feedback]="false"
+            [toggleMask]="true"
+            placeholder="Ingresá tu contraseña"
+            styleClass="w-full"
+            inputStyleClass="w-full"
+          />
+        </div>
+
+        <div class="pt-2">
+          <p-button
+            label="Ingresar a la plataforma"
+            icon="pi pi-sign-in"
+            type="submit"
+            [loading]="authStore.cargando()"
+            styleClass="w-full"
+          />
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

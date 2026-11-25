@@ -1,0 +1,28 @@
+<app-flujo-sistema [activeStep]="[1, 2]" />
+
+<div class="my-5">
+  <app-kpi-cards
+    [unidadesEnStock]="store.unidadesEnStock()"
+    [etiquetaAlcance]="store.etiquetaAlcance()"
+    [valorInventario]="store.valorInventario()"
+    etiquetaValor="Valor inventario al costo"
+    [alertasStockBajo]="store.alertasStockBajo()"
+    [ventasHoy]="store.ventasHoy()"
+    [variacionVentas]="store.variacionVentas()"
+  />
+</div>
+
+@if (store.tieneReportesOperativos()) {
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+    <div class="lg:col-span-2">
+      <app-inventario-tabla [items]="store.inventarioFiltrado()" [cargando]="store.cargando()" />
+    </div>
+    <app-movimientos-panel [items]="store.movimientosFiltrados()" />
+  </div>
+} @else {
+  <div class="mb-5">
+    <app-inventario-tabla [items]="store.inventarioFiltrado()" [cargando]="store.cargando()" />
+  </div>
+}
+
+<app-reposicion-panel [items]="store.stockBajoFiltrado()" />

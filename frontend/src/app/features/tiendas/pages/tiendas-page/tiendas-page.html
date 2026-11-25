@@ -1,0 +1,103 @@
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-semibold text-surface-100">Sucursales y Depósitos</h1>
+    <p class="text-xs text-surface-400 mt-0.5">
+      @if (puedeConfigurar()) {
+        Administración global de tiendas comerciales (POS) y depósitos logísticos.
+      } @else {
+        Ubicaciones habilitadas dentro de tu alcance operativo asignado.
+      }
+    </p>
+  </div>
+
+  @if (puedeConfigurar()) {
+    <p-button label="Nueva ubicación" icon="pi pi-plus" (onClick)="abrirNuevo()" />
+  } @else {
+    <p-tag value="Solo lectura · Alcance asignado" severity="secondary" />
+  }
+</div>
+
+<div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+  <p-table [value]="store.tiendas()" [loading]="store.cargando()" dataKey="id">
+    <ng-template #header>
+      <tr>
+        <th class="w-20">ID</th>
+        <th>Nombre</th>
+        <th>Tipo de Ubicación</th>
+        <th>Dirección</th>
+        @if (puedeConfigurar()) {
+          <th class="w-28"></th>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-tienda>
+      <tr>
+        <td class="font-mono text-xs text-surface-400">#{{ tienda.id }}</td>
+        <td class="font-medium text-surface-100">{{ tienda.nombre }}</td>
+        <td>
+          <p-tag
+            [value]="tienda.tipo === 'DEPOSITO' ? 'DEPÓSITO' : 'TIENDA / POS'"
+            [severity]="tienda.tipo === 'DEPOSITO' ? 'info' : 'success'"
+          />
+        </td>
+        <td class="text-surface-300">{{ tienda.direccion || '—' }}</td>
+        @if (puedeConfigurar()) {
+          <td>
+            <div class="flex gap-1 justify-end">
+              <p-button icon="pi pi-pencil" severity="secondary" [text]="true" (onClick)="abrirEdicion(tienda)" />
+              <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="confirmarEliminar(tienda)" />
+            </div>
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="puedeConfigurar() ? 5 : 4" class="text-center text-surface-500 py-6">
+          No hay ubicaciones registradas en tu alcance.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [header]="editando() ? 'Editar ubicación' : 'Nueva ubicación'"
+>
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label for="nombre" class="text-sm font-semibold text-slate-900">Nombre</label>
+      <input id="nombre" pInputText formControlName="nombre" placeholder="Ej. Sucursal Centro o Depósito Norte" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Tipo operativo</label>
+      <p-select
+        [options]="opcionesTipo"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="tipo"
+        appendTo="body"
+      />
+      <span class="text-xs font-medium text-slate-800">
+        Define qué roles admiten asignación: Cajero/Vendedor opera en TIENDA; Encargado opera en DEPÓSITO.
+      </span>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="direccion" class="text-sm font-semibold text-slate-900">Dirección</label>
+      <input id="direccion" pInputText formControlName="direccion" placeholder="Dirección física" />
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="dialogVisible.set(false)" />
+      <p-button label="Guardar" type="submit" />
+    </div>
+  </form>
+</p-dialog>

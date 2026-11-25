@@ -1,0 +1,32 @@
+<div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="font-medium text-surface-100">Movimientos recientes</h2>
+    <span class="text-xs text-green-400 flex items-center gap-1">
+      <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span> en vivo
+    </span>
+  </div>
+
+  <div class="flex flex-col gap-1">
+    @for (m of items(); track m.fecha + m.idProducto + m.tipo) {
+      <div class="flex items-center gap-3 py-2 border-b border-surface-800 last:border-0">
+        <span class="w-7 h-7 rounded-md flex items-center justify-center text-xs" [class]="color(m.tipo)">
+          <i [class]="icono(m.tipo)"></i>
+        </span>
+
+        <div class="flex-1 min-w-0">
+          <p class="text-sm truncate">
+            <span class="font-medium">{{ etiqueta(m.tipo) }}</span>
+            {{ m.nombreProducto }}
+          </p>
+          <p class="text-xs text-surface-500">
+            {{ m.nombreTienda }}{{ m.nombreTiendaDestino ? ' → ' + m.nombreTiendaDestino : '' }}
+          </p>
+        </div>
+
+        <span class="text-sm font-medium">{{ signo(m) }}{{ m.cantidad }}</span>
+      </div>
+    } @empty {
+      <p class="text-sm text-surface-500 py-4 text-center">Sin movimientos todavia.</p>
+    }
+  </div>
+</div>

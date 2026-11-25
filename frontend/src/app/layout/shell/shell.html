@@ -1,0 +1,257 @@
+<div class="min-h-screen flex bg-surface-950 text-surface-100">
+  <!-- Sidebar -->
+  <aside class="w-64 shrink-0 bg-surface-900 border-r border-surface-800 flex flex-col">
+    <div class="px-5 py-5 border-b border-surface-800 flex items-center justify-between">
+      <div>
+        <p class="font-semibold text-surface-50">Stockcomerce</p>
+        <p class="text-[11px] text-surface-500 tracking-wide">RBAC · MULTI-UBICACIÓN</p>
+      </div>
+      <span
+        class="px-2 py-0.5 text-[10px] font-semibold rounded bg-primary-500/15 text-primary-300 border border-primary-500/30"
+      >
+        {{ authStore.esAlcanceGlobal() ? 'GLOBAL' : 'ACOTADO' }}
+      </span>
+    </div>
+
+    <nav class="flex-1 py-3 overflow-y-auto">
+      @for (seccion of seccionesNav(); track seccion.titulo) {
+        <div class="mb-3">
+          <p class="px-5 py-1 text-[10px] font-semibold uppercase tracking-wider text-surface-500">
+            {{ seccion.titulo }}
+          </p>
+          @for (item of seccion.items; track item.path) {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="bg-primary-500/10 text-primary-400 border-primary-400"
+              class="flex items-center gap-3 px-5 py-2 text-sm text-surface-300 border-l-2 border-transparent hover:bg-surface-800/60 transition"
+            >
+              <i [class]="item.icon"></i>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <!-- Tarjeta de usuario autenticado -->
+    <div class="p-4 border-t border-surface-800 bg-surface-950/40 flex flex-col gap-2.5">
+      @if (authStore.usuario(); as u) {
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-surface-100 truncate">{{ u.nombreCompleto }}</p>
+            <p class="text-xs text-surface-400 truncate">&#64;{{ u.username }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="alcanceVisible.set(true)"
+            class="text-xs text-primary-400 hover:underline cursor-pointer shrink-0"
+            title="Ver mis roles, ubicaciones y permisos"
+          >
+            Mi alcance
+          </button>
+        </div>
+
+        <p class="text-[11px] text-surface-400 leading-snug bg-surface-900 border border-surface-800 rounded-md px-2.5 py-1.5">
+          {{ authStore.resumenRoles() }}
+        </p>
+
+        <p-button
+          label="Cerrar sesión"
+          icon="pi pi-sign-out"
+          severity="secondary"
+          size="small"
+          [outlined]="true"
+          styleClass="w-full"
+          (onClick)="authStore.logout()"
+        />
+      }
+    </div>
+  </aside>
+
+  <!-- Topbar + contenido -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-surface-800">
+      <div>
+        <h1 class="text-lg font-semibold text-surface-50">{{ breadcrumb() }}</h1>
+        <p class="text-xs text-surface-500 uppercase tracking-wide">
+          {{ authStore.esAlcanceGlobal() ? 'Alcance consolidado multi-sucursal' : 'Filtrado automático por ubicación asignada' }}
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        @if (opcionesTienda().length > 0) {
+          <p-select
+            [options]="opcionesTienda()"
+            optionLabel="nombre"
+            optionValue="id"
+            [ngModel]="seleccion.idTienda()"
+            (ngModelChange)="seleccion.seleccionar($event)"
+            [disabled]="!authStore.esAlcanceGlobal() && opcionesTienda().length === 1"
+            placeholder="Seleccionar ubicación"
+            styleClass="w-64"
+          />
+        }
+
+        @if (authStore.tienePermiso('INVENTARIO_VER', 'REPORTE_OPERATIVO_VER')) {
+          <button
+            type="button"
+            (click)="abrirNotificaciones()"
+            class="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-900 border border-surface-700 hover:border-surface-600 text-surface-200 text-sm cursor-pointer transition"
+            title="Alertas de stock bajo filtradas a tu alcance"
+          >
+            <i class="pi pi-bell"></i>
+            <span>Alertas</span>
+            @if (notificacionStore.noLeidasCount() > 0) {
+              <span class="px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
+                {{ notificacionStore.noLeidasCount() }}
+              </span>
+            }
+          </button>
+        }
+      </div>
+    </header>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<!-- Dialog: Alertas SSE filtradas por alcance -->
+<p-dialog
+  [visible]="notificacionesVisible()"
+  (visibleChange)="notificacionesVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '36rem' }"
+  header="Alertas de Stock Bajo en tu Alcance"
+>
+  <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+    <div class="flex items-center gap-2">
+      <p-button
+        [label]="notificacionStore.soloNoLeidas() ? 'Viendo: Solo no leídas' : 'Viendo: Todas'"
+        icon="pi pi-filter"
+        size="small"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="notificacionStore.setSoloNoLeidas(!notificacionStore.soloNoLeidas())"
+      />
+      <span class="text-xs font-medium text-slate-800">
+        ({{ notificacionStore.noLeidasCount() }} sin leer)
+      </span>
+    </div>
+
+    @if (notificacionStore.noLeidasCount() > 0) {
+      <p-button
+        label="Marcar todas como leídas"
+        icon="pi pi-check-circle"
+        size="small"
+        [text]="true"
+        (onClick)="notificacionStore.marcarTodasLeidas()"
+      />
+    }
+  </div>
+
+  <div class="flex flex-col gap-2 max-h-96 overflow-y-auto">
+    @for (n of notificacionStore.notificacionesVisibles(); track n.id) {
+      <div
+        class="p-3 rounded-lg border flex items-start justify-between gap-3"
+        [class]="n.leida ? 'bg-slate-50 border-slate-300' : 'bg-red-50 border-red-300'"
+      >
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <p-tag
+              [value]="n.leida ? 'Leída' : 'Nueva'"
+              [severity]="n.leida ? 'secondary' : 'danger'"
+            />
+            <span class="text-xs font-medium text-slate-800">{{ n.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <p class="text-sm font-semibold text-slate-950">{{ n.mensaje }}</p>
+          <p class="text-xs text-slate-800 mt-1">
+            Producto: <span class="font-semibold text-slate-950">{{ n.nombreProducto }}</span> ·
+            Ubicación: <span class="font-semibold text-slate-950">{{ n.nombreTienda }}</span> ·
+            Stock: <span class="text-red-700 font-bold font-mono">{{ n.cantidadActual }}/{{ n.stockMinimo }}</span>
+          </p>
+        </div>
+
+        @if (!n.leida) {
+          <p-button
+            icon="pi pi-check"
+            size="small"
+            severity="secondary"
+            [text]="true"
+            title="Marcar como leída"
+            (onClick)="notificacionStore.marcarLeida(n.id)"
+          />
+        }
+      </div>
+    } @empty {
+      <p class="text-sm font-medium text-slate-800 py-8 text-center">
+        No hay alertas de stock bajo {{ notificacionStore.soloNoLeidas() ? 'sin leer' : 'en tus ubicaciones' }}.
+      </p>
+    }
+  </div>
+</p-dialog>
+
+<!-- Dialog: Mi Alcance y Permisos Efectivos -->
+<p-dialog
+  [visible]="alcanceVisible()"
+  (visibleChange)="alcanceVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '38rem' }"
+  header="Mi Perfil de Riesgo y Alcance de Datos"
+>
+  @if (authStore.usuario(); as u) {
+    <div class="flex flex-col gap-4 pt-1">
+      <div class="bg-slate-50 border border-slate-300 rounded-lg p-3 flex items-center justify-between">
+        <div>
+          <p class="font-semibold text-slate-950">{{ u.nombreCompleto }}</p>
+          <p class="text-xs font-medium text-slate-800">Usuario: &#64;{{ u.username }}</p>
+        </div>
+        <p-tag
+          [value]="authStore.puedeVerCostos() ? 'Costos visibles' : 'Costos ocultos'"
+          [severity]="authStore.puedeVerCostos() ? 'warn' : 'secondary'"
+        />
+      </div>
+
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wide text-slate-900 mb-2">
+          Vínculos contextuales asignados
+        </p>
+        <div class="flex flex-col gap-2">
+          @for (a of authStore.asignacionesActivas(); track $index) {
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-300 flex items-center justify-between gap-2">
+              <div>
+                <p class="text-sm font-semibold text-slate-950">{{ etiquetaRol[a.rol] || a.rol }}</p>
+                <p class="text-xs text-slate-800 mt-0.5">
+                  @if (a.tipoAlcance === 'GLOBAL') {
+                    Alcance GLOBAL sobre todas las tiendas y depósitos
+                  } @else {
+                    Ubicación: <span class="font-semibold text-slate-950">{{ a.nombreTienda }}</span>
+                    ({{ a.tipoUbicacion }})
+                    @if (a.caja) {
+                      · Terminal: <span class="font-mono font-semibold text-emerald-800">{{ a.caja }}</span>
+                    }
+                  }
+                </p>
+              </div>
+              <p-tag [value]="'Riesgo ' + (a.nivelRiesgo || 'OPERATIVO')" [severity]="severidadRiesgo(a.nivelRiesgo)" />
+            </div>
+          }
+        </div>
+      </div>
+
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wide text-slate-900 mb-2">
+          Capacidades efectivas ({{ u.permisosEfectivos.length }})
+        </p>
+        <div class="flex flex-wrap gap-1.5">
+          @for (perm of u.permisosEfectivos; track perm) {
+            <span class="text-[11px] font-mono font-medium bg-slate-100 border border-slate-300 rounded px-2 py-0.5 text-slate-900">
+              {{ perm }}
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</p-dialog>

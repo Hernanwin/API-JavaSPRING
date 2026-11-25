@@ -1,0 +1,266 @@
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-xl font-semibold text-surface-100">Analítica de Márgenes, Rotación y Cumplimiento</h1>
+    <p class="text-xs text-surface-400 mt-0.5">
+      Indicadores comerciales y de abastecimiento segregados por nivel de sensibilidad financiera.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <p-select
+      [options]="opcionesProveedor()"
+      optionLabel="nombre"
+      optionValue="id"
+      [ngModel]="store.idProveedorFiltro()"
+      (ngModelChange)="store.filtrarProveedor($event)"
+      styleClass="w-56"
+    />
+
+    <div class="flex bg-surface-900 border border-surface-800 rounded-lg p-1 gap-1">
+      @if (store.puedeMargenesYRotacion()) {
+        <button
+          type="button"
+          (click)="tabActiva.set('margenes')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="tabActiva() === 'margenes' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Márgenes
+        </button>
+        <button
+          type="button"
+          (click)="tabActiva.set('rotacion')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="tabActiva() === 'rotacion' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Rotación
+        </button>
+        <button
+          type="button"
+          (click)="tabActiva.set('cumplimiento')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="tabActiva() === 'cumplimiento' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Cumplimiento Recepción
+        </button>
+      }
+
+      @if (store.puedeFinancieroConsolidado()) {
+        <button
+          type="button"
+          (click)="tabActiva.set('financiero')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="tabActiva() === 'financiero' ? 'bg-amber-500/20 text-amber-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Financiero Consolidado
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Tab 1: Márgenes -->
+@if (tabActiva() === 'margenes' && store.puedeMargenesYRotacion()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p-table [value]="store.margenes()" [loading]="store.cargando()" dataKey="idProducto">
+      <ng-template #header>
+        <tr>
+          <th>Producto</th>
+          <th>Proveedor</th>
+          <th class="text-right">Precio Actual</th>
+          <th class="text-right">Costo Actual</th>
+          <th class="text-right">Margen Catálogo</th>
+          <th class="text-right">Vendidas</th>
+          <th class="text-right">Ingresos</th>
+          <th class="text-right">Costo Ventas</th>
+          <th class="text-right">Utilidad Bruta</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-m>
+        <tr>
+          <td class="font-medium text-surface-100">{{ m.nombreProducto }}</td>
+          <td class="text-sm text-surface-400">{{ m.nombreProveedor || '—' }}</td>
+          <td class="text-right font-mono text-xs">$ {{ m.precioVentaActual | number: '1.2-2' }}</td>
+          <td class="text-right font-mono text-xs text-surface-300">$ {{ m.costoActual | number: '1.2-2' }}</td>
+          <td class="text-right">
+            <p-tag
+              [value]="m.porcentajeMargenCatalogo + '%'"
+              [severity]="m.porcentajeMargenCatalogo >= 25 ? 'success' : 'warn'"
+            />
+          </td>
+          <td class="text-right font-mono">{{ m.unidadesVendidas }}</td>
+          <td class="text-right font-mono text-xs">$ {{ m.ingresosVentas | number: '1.2-2' }}</td>
+          <td class="text-right font-mono text-xs text-surface-400">$ {{ m.costoVentas | number: '1.2-2' }}</td>
+          <td class="text-right font-semibold text-green-400">
+            $ {{ m.utilidadBruta | number: '1.2-2' }}
+            <span class="text-xs text-surface-400 font-normal">({{ m.porcentajeMargenRealizado }}%)</span>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="9" class="text-center text-surface-500 py-6">Sin datos de márgenes para mostrar.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+<!-- Tab 2: Rotación -->
+@if (tabActiva() === 'rotacion' && store.puedeMargenesYRotacion()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs text-surface-400">
+        Índice de rotación y cobertura estimada de stock según salidas del período elegido.
+      </p>
+      <p-select
+        [options]="opcionesDias"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="store.diasRotacion()"
+        (ngModelChange)="store.cambiarDiasRotacion($event)"
+        styleClass="w-48"
+      />
+    </div>
+
+    <p-table [value]="store.rotacion()" [loading]="store.cargando()">
+      <ng-template #header>
+        <tr>
+          <th>Producto</th>
+          <th>Proveedor</th>
+          <th>Ubicación</th>
+          <th class="text-right">Stock Actual</th>
+          <th class="text-right">Salidas Período</th>
+          <th class="text-right">Índice Rotación</th>
+          <th class="text-right">Cobertura Estimada</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-r>
+        <tr>
+          <td class="font-medium text-surface-100">{{ r.nombreProducto }}</td>
+          <td class="text-xs text-surface-400">{{ r.nombreProveedor || '—' }}</td>
+          <td class="text-sm text-surface-300">{{ r.nombreTienda }}</td>
+          <td class="text-right font-mono">{{ r.stockActual }}</td>
+          <td class="text-right font-mono text-primary-300">{{ r.unidadesSalidasPeriodo }}</td>
+          <td class="text-right font-semibold">{{ r.indiceRotacion | number: '1.2-2' }}x</td>
+          <td class="text-right text-xs font-mono text-surface-300">
+            {{ r.diasInventarioEstimados != null ? (r.diasInventarioEstimados + ' días') : 'Sin salidas' }}
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="text-center text-surface-500 py-6">Sin registros de inventario para calcular rotación.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+<!-- Tab 3: Cumplimiento de Recepción en Tiendas y Depósitos -->
+@if (tabActiva() === 'cumplimiento' && store.puedeMargenesYRotacion()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p-table [value]="store.cumplimiento()" [loading]="store.cargando()" dataKey="idTienda">
+      <ng-template #header>
+        <tr>
+          <th>Ubicación Destino</th>
+          <th class="text-right">OC Totales (Comp / Parc / Pend)</th>
+          <th class="text-right">Unid. OC Recibidas</th>
+          <th>Cumplimiento OC</th>
+          <th class="text-right">Transf. (Recib / En Tránsito)</th>
+          <th>Cumplimiento Transf.</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-c>
+        <tr>
+          <td class="font-medium text-surface-100">{{ c.nombreTienda }}</td>
+          <td class="text-right font-mono text-xs text-surface-300">
+            {{ c.ordenesCompraTotales }}
+            <span class="text-surface-500">
+              ({{ c.ordenesCompraCompletas }} / {{ c.ordenesCompraParciales }} / {{ c.ordenesCompraPendientes }})
+            </span>
+          </td>
+          <td class="text-right font-mono text-xs">
+            {{ c.unidadesOcRecibidas }} / {{ c.unidadesOcSolicitadas }}
+          </td>
+          <td class="w-44">
+            <div class="flex items-center gap-2">
+              <p-progressbar
+                [value]="c.porcentajeCumplimientoOc"
+                [showValue]="false"
+                [style]="{ height: '6px', width: '5rem' }"
+              />
+              <span class="text-xs font-mono">{{ c.porcentajeCumplimientoOc }}%</span>
+            </div>
+          </td>
+          <td class="text-right font-mono text-xs text-surface-300">
+            {{ c.transferenciasCompletadas }} / {{ c.transferenciasEnTransito }}
+          </td>
+          <td class="w-44">
+            <div class="flex items-center gap-2">
+              <p-progressbar
+                [value]="c.porcentajeCumplimientoTransferencias"
+                [showValue]="false"
+                [style]="{ height: '6px', width: '5rem' }"
+              />
+              <span class="text-xs font-mono">{{ c.porcentajeCumplimientoTransferencias }}%</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6" class="text-center text-surface-500 py-6">Sin métricas de recepción disponibles.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+<!-- Tab 4: Reporte Financiero Consolidado (Exclusivo Dirección / ADMIN) -->
+@if (tabActiva() === 'financiero' && store.puedeFinancieroConsolidado()) {
+  @if (store.financiero(); as f) {
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-surface-900 border border-surface-800 rounded-xl p-5">
+        <p class="text-xs uppercase tracking-wide text-surface-500 mb-1">Ingresos consolidados ({{ f.cantidadVentas }} ventas)</p>
+        <p class="text-2xl font-semibold text-surface-50">$ {{ f.ingresosTotalesVentas | number: '1.2-2' }}</p>
+        <p class="text-xs text-surface-400 mt-2">
+          Costo mercadería vendida: <span class="font-mono">$ {{ f.costoTotalVentas | number: '1.2-2' }}</span>
+        </p>
+      </div>
+
+      <div class="bg-surface-900 border border-surface-800 rounded-xl p-5">
+        <p class="text-xs uppercase tracking-wide text-surface-500 mb-1">Utilidad bruta consolidada</p>
+        <p class="text-2xl font-semibold text-green-400">$ {{ f.utilidadBrutaVentas | number: '1.2-2' }}</p>
+        <p class="text-xs text-green-400/80 mt-2">Margen bruto global: {{ f.margenBrutoPorcentaje }}%</p>
+      </div>
+
+      <div class="bg-surface-900 border border-surface-800 rounded-xl p-5">
+        <p class="text-xs uppercase tracking-wide text-surface-500 mb-1">Capital en inventario</p>
+        <p class="text-2xl font-semibold text-amber-300">$ {{ f.valorInventarioAlCosto | number: '1.2-2' }}</p>
+        <p class="text-xs text-surface-400 mt-2">
+          A precio venta: <span class="font-mono text-surface-200">$ {{ f.valorInventarioAPrecioVenta | number: '1.2-2' }}</span>
+        </p>
+      </div>
+
+      <div class="bg-surface-900 border border-surface-800 rounded-xl p-5 md:col-span-2">
+        <p class="text-xs uppercase tracking-wide text-surface-500 mb-1">Cartera de apartados activos</p>
+        <p class="text-xl font-semibold text-surface-100">$ {{ f.apartadosActivosTotal | number: '1.2-2' }}</p>
+        <p class="text-xs text-surface-400 mt-1">
+          Saldo pendiente de cobro en tiendas: <span class="font-mono text-amber-400">$ {{ f.apartadosSaldoPendiente | number: '1.2-2' }}</span>
+        </p>
+      </div>
+
+      <div class="bg-surface-900 border border-surface-800 rounded-xl p-5">
+        <p class="text-xs uppercase tracking-wide text-surface-500 mb-1">Órdenes de compra comprometidas</p>
+        <p class="text-xl font-semibold text-primary-300">$ {{ f.ordenesCompraComprometidas | number: '1.2-2' }}</p>
+        <p class="text-xs text-surface-400 mt-1">Pedidos aprobados pendientes de completar recepción</p>
+      </div>
+    </div>
+  }
+}

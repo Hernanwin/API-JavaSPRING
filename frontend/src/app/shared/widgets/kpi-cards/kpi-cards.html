@@ -1,0 +1,36 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-surface-500 mb-2">Unidades en stock</p>
+    <p class="text-2xl font-semibold text-surface-50">{{ unidadesEnStock() | number }}</p>
+    <p class="text-xs text-surface-500 mt-1">{{ etiquetaAlcance() }}</p>
+  </div>
+
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-surface-500 mb-2">Valorización</p>
+    @if (valorInventario() !== null) {
+      <p class="text-2xl font-semibold text-surface-50">$ {{ valorInventario()! | number: '1.0-0' }}</p>
+      <p class="text-xs text-surface-500 mt-1">{{ etiquetaValor() }}</p>
+    } @else {
+      <p class="text-lg font-medium text-surface-400">Restringido</p>
+      <p class="text-xs text-surface-500 mt-1">Sin exposición de costos</p>
+    }
+  </div>
+
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-surface-500 mb-2">Alertas de stock</p>
+    <p class="text-2xl font-semibold text-red-400">{{ alertasStockBajo() }}</p>
+    <p class="text-xs text-red-400/80 mt-1">Bajo umbral mínimo</p>
+  </div>
+
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p class="text-xs uppercase tracking-wide text-surface-500 mb-2">Salidas / Ventas hoy</p>
+    <p class="text-2xl font-semibold text-surface-50">{{ ventasHoy() }} u</p>
+    @if (variacionVentas(); as variacion) {
+      <p class="text-xs mt-1" [class]="variacion >= 0 ? 'text-green-400' : 'text-red-400'">
+        {{ variacion >= 0 ? '+' : '' }}{{ variacion }}% vs. ayer
+      </p>
+    } @else {
+      <p class="text-xs text-surface-500 mt-1">en ubicaciones visibles</p>
+    }
+  </div>
+</div>

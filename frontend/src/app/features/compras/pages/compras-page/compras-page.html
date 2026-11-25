@@ -1,0 +1,413 @@
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-xl font-semibold text-surface-100">Abastecimiento, Proveedores y Recepción</h1>
+    <p class="text-xs text-surface-400 mt-0.5">
+      Pedidos a proveedores, aprobación por supervisión y control de cumplimiento de recepción en tiendas/depósitos.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    @if (store.puedeVerProveedores()) {
+      <div class="flex bg-surface-900 border border-surface-800 rounded-lg p-1 gap-1">
+        <button
+          type="button"
+          (click)="vistaActiva.set('ordenes')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="vistaActiva() === 'ordenes' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Órdenes de Compra
+        </button>
+        <button
+          type="button"
+          (click)="vistaActiva.set('proveedores')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition"
+          [class]="vistaActiva() === 'proveedores' ? 'bg-primary-500/20 text-primary-300' : 'text-surface-400 hover:text-surface-200'"
+        >
+          Proveedores ({{ store.proveedores().length }})
+        </button>
+      </div>
+    }
+
+    @if (vistaActiva() === 'ordenes' && store.puedeCrearOrden()) {
+      <p-button label="Nueva Orden de Compra" icon="pi pi-plus" (onClick)="abrirNuevaOrden()" />
+    }
+
+    @if (vistaActiva() === 'proveedores' && store.puedeGestionarProveedores()) {
+      <p-button label="Nuevo Proveedor" icon="pi pi-plus" (onClick)="abrirNuevoProveedor()" />
+    }
+  </div>
+</div>
+
+@if (vistaActiva() === 'ordenes') {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <h2 class="font-medium text-surface-100">Estado de Pedidos y Recepción</h2>
+
+      <div class="flex flex-wrap items-center gap-2">
+        @if (store.puedeVerProveedores()) {
+          <p-select
+            [options]="opcionesFiltroProv()"
+            optionLabel="nombre"
+            optionValue="id"
+            [ngModel]="store.idProveedorFiltro()"
+            (ngModelChange)="store.filtrarProveedor($event)"
+            styleClass="w-56"
+          />
+        }
+
+        <p-select
+          [options]="opcionesEstado"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="store.estadoFiltro()"
+          (ngModelChange)="store.filtrarEstado($event)"
+          styleClass="w-64"
+        />
+      </div>
+    </div>
+
+    <p-table [value]="store.ordenes()" [loading]="store.cargando()" dataKey="id">
+      <ng-template #header>
+        <tr>
+          <th class="w-16">OC</th>
+          <th>Proveedor</th>
+          <th>Destino</th>
+          <th>Ítems (Recibido / Solicitado)</th>
+          <th>Cumplimiento</th>
+          @if (store.puedeVerCostos()) {
+            <th class="text-right">Total Estimado</th>
+          }
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-oc>
+        <tr>
+          <td class="font-mono text-xs text-surface-400">#{{ oc.id }}</td>
+          <td>
+            <p class="font-medium text-surface-100">{{ oc.nombreProveedor }}</p>
+            <p class="text-[11px] text-surface-500">{{ oc.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</p>
+          </td>
+          <td class="text-sm text-surface-300">{{ oc.nombreTiendaDestino }}</td>
+          <td>
+            <div class="flex flex-wrap gap-1">
+              @for (d of oc.detalle; track d.id) {
+                <span class="text-xs bg-surface-800 border border-surface-700 rounded px-2 py-0.5 text-surface-200">
+                  {{ d.nombreProducto }}: <span class="font-mono">{{ d.cantidadRecibida }}/{{ d.cantidadSolicitada }}</span>
+                </span>
+              }
+            </div>
+          </td>
+          <td class="w-40">
+            <div class="flex items-center gap-2">
+              <p-progressbar
+                [value]="oc.porcentajeCumplimiento"
+                [showValue]="false"
+                [style]="{ height: '6px', width: '5rem' }"
+              />
+              <span class="text-xs font-mono text-surface-300">{{ oc.porcentajeCumplimiento }}%</span>
+            </div>
+          </td>
+          @if (store.puedeVerCostos()) {
+            <td class="text-right font-mono text-sm text-surface-100">
+              {{ oc.totalEstimado != null ? ('$ ' + (oc.totalEstimado | number: '1.2-2')) : '—' }}
+            </td>
+          }
+          <td>
+            <p-tag [value]="oc.estado" [severity]="severidadEstado(oc.estado)" />
+          </td>
+          <td>
+            <div class="flex justify-end gap-1.5">
+              @if (oc.estado === 'PENDIENTE_APROBACION' && store.puedeAprobarOrden()) {
+                <p-button
+                  label="Aprobar"
+                  icon="pi pi-check"
+                  size="small"
+                  severity="success"
+                  (onClick)="aprobar(oc)"
+                />
+                <p-button
+                  icon="pi pi-times"
+                  size="small"
+                  severity="danger"
+                  [outlined]="true"
+                  title="Cancelar OC"
+                  (onClick)="confirmarCancelar(oc)"
+                />
+              }
+
+              @if (store.puedeRecibirOrden(oc)) {
+                <p-button
+                  label="Recibir mercadería"
+                  icon="pi pi-box"
+                  size="small"
+                  severity="warn"
+                  (onClick)="abrirRecepcion(oc)"
+                />
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center text-surface-500 py-6">
+            No hay órdenes de compra registradas para tu alcance o filtro actual.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+@if (vistaActiva() === 'proveedores' && store.puedeVerProveedores()) {
+  <div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+    <p-table [value]="store.proveedores()" [loading]="store.cargando()" dataKey="id">
+      <ng-template #header>
+        <tr>
+          <th class="w-16">ID</th>
+          <th>Razón Social / Nombre</th>
+          <th>CUIT / ID Fiscal</th>
+          <th>Contacto</th>
+          <th>Email / Teléfono</th>
+          @if (store.puedeGestionarProveedores()) {
+            <th class="w-28"></th>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-p>
+        <tr>
+          <td class="font-mono text-xs text-surface-400">#{{ p.id }}</td>
+          <td class="font-medium text-surface-100">{{ p.nombre }}</td>
+          <td class="font-mono text-xs text-surface-300">{{ p.identificacionFiscal || '—' }}</td>
+          <td class="text-sm text-surface-300">{{ p.contacto || '—' }}</td>
+          <td class="text-xs text-surface-400">
+            {{ p.email || '—' }} {{ p.telefono ? '· ' + p.telefono : '' }}
+          </td>
+          @if (store.puedeGestionarProveedores()) {
+            <td>
+              <div class="flex justify-end gap-1">
+                <p-button icon="pi pi-pencil" severity="secondary" [text]="true" (onClick)="abrirEditarProveedor(p)" />
+                <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="confirmarEliminarProveedor(p)" />
+              </div>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6" class="text-center text-surface-500 py-6">Todavía no hay proveedores registrados.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+}
+
+<!-- Dialog: Nueva Orden de Compra -->
+<p-dialog
+  [visible]="dialogOcVisible()"
+  (visibleChange)="dialogOcVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '40rem' }"
+  header="Emitir Orden de Compra a Proveedor"
+>
+  <form [formGroup]="formOrden" (ngSubmit)="guardarOrden()" class="flex flex-col gap-4 pt-2">
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Proveedor</label>
+        <p-select
+          [options]="store.proveedores()"
+          optionLabel="nombre"
+          optionValue="id"
+          formControlName="idProveedor"
+          appendTo="body"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Ubicación de recepción (Tienda/Depósito)</label>
+        <p-select
+          [options]="store.destinos()"
+          optionLabel="nombre"
+          optionValue="id"
+          formControlName="idTiendaDestino"
+          appendTo="body"
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center justify-between">
+        <label class="text-sm font-semibold text-slate-900">Renglones solicitados</label>
+        <p-button
+          label="Agregar producto"
+          icon="pi pi-plus"
+          size="small"
+          severity="secondary"
+          [outlined]="true"
+          type="button"
+          (onClick)="agregarLineaOc()"
+        />
+      </div>
+
+      <div formArrayName="detalle" class="flex flex-col gap-2">
+        @for (ctrl of lineasOc.controls; track $index; let i = $index) {
+          <div
+            [formGroupName]="i"
+            class="grid grid-cols-12 gap-2 items-center bg-slate-50 border border-slate-300 rounded-lg p-2.5"
+          >
+            <div class="col-span-5">
+              <p-select
+                [options]="store.productos()"
+                optionLabel="nombre"
+                optionValue="id"
+                formControlName="idProducto"
+                styleClass="w-full"
+                appendTo="body"
+              />
+            </div>
+
+            <div class="col-span-3">
+              <p-inputnumber
+                formControlName="cantidadSolicitada"
+                [min]="1"
+                placeholder="Cant."
+                inputStyleClass="w-full"
+              />
+            </div>
+
+            <div class="col-span-3">
+              <p-inputnumber
+                formControlName="costoUnitario"
+                mode="currency"
+                currency="ARS"
+                locale="es-AR"
+                inputStyleClass="w-full"
+              />
+            </div>
+
+            <div class="col-span-1 text-right">
+              <p-button
+                icon="pi pi-times"
+                severity="danger"
+                [text]="true"
+                size="small"
+                type="button"
+                [disabled]="lineasOc.length === 1"
+                (onClick)="quitarLineaOc(i)"
+              />
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Condiciones / Observación</label>
+      <input pInputText formControlName="observacion" placeholder="Ej. Entrega pactada 48 hs" />
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="dialogOcVisible.set(false)" />
+      <p-button label="Crear orden" type="submit" />
+    </div>
+  </form>
+</p-dialog>
+
+<!-- Dialog: Recepción física de Orden de Compra -->
+<p-dialog
+  [visible]="dialogRecepcionVisible()"
+  (visibleChange)="dialogRecepcionVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '36rem' }"
+  header="Registrar Recepción Física de Pedido"
+>
+  @if (ordenRecibiendo(); as oc) {
+    <form [formGroup]="formRecepcion" (ngSubmit)="confirmarRecepcionOc()" class="flex flex-col gap-4 pt-2">
+      <div class="p-3 rounded-lg bg-slate-50 border border-slate-300 text-xs text-slate-900">
+        <p class="font-semibold text-sm text-slate-950">OC #{{ oc.id }} · {{ oc.nombreProveedor }}</p>
+        <p class="mt-0.5 text-slate-800">Ingresa automáticamente al stock de {{ oc.nombreTiendaDestino }}.</p>
+      </div>
+
+      <div formArrayName="items" class="flex flex-col gap-2">
+        @for (ctrl of lineasRecepcion.controls; track $index; let i = $index) {
+          <div
+            [formGroupName]="i"
+            class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-300 rounded-lg p-3"
+          >
+            <div>
+              <p class="text-sm font-semibold text-slate-950">{{ ctrl.get('nombreProducto')?.value }}</p>
+              <p class="text-xs font-medium text-slate-800">Pendiente de recibir: {{ ctrl.get('pendiente')?.value }} u.</p>
+            </div>
+
+            <div class="w-32">
+              <p-inputnumber
+                formControlName="cantidadRecibida"
+                [min]="0"
+                [max]="ctrl.get('pendiente')?.value"
+                [showButtons]="true"
+                inputStyleClass="w-full"
+              />
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Observación de recepción / Remito</label>
+        <input pInputText formControlName="observacion" placeholder="Ej. Remito #8891 recibido conforme" />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="dialogRecepcionVisible.set(false)" />
+        <p-button label="Confirmar ingreso" severity="success" type="submit" />
+      </div>
+    </form>
+  }
+</p-dialog>
+
+<!-- Dialog: Nuevo / Editar Proveedor -->
+<p-dialog
+  [visible]="dialogProveedorVisible()"
+  (visibleChange)="dialogProveedorVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [header]="proveedorEditando() ? 'Editar proveedor' : 'Nuevo proveedor'"
+>
+  <form [formGroup]="formProveedor" (ngSubmit)="guardarProveedor()" class="flex flex-col gap-3.5 pt-2">
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Razón Social / Nombre</label>
+      <input pInputText formControlName="nombre" placeholder="Ej. Distribuidora Textil S.A." />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">CUIT / Identificación Fiscal</label>
+      <input pInputText formControlName="identificacionFiscal" placeholder="Ej. 30-12345678-9" />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold text-slate-900">Persona de contacto</label>
+      <input pInputText formControlName="contacto" placeholder="Nombre y apellido" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Email</label>
+        <input pInputText formControlName="email" placeholder="ventas@proveedor.com" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Teléfono</label>
+        <input pInputText formControlName="telefono" placeholder="+54 11 ..." />
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="dialogProveedorVisible.set(false)" />
+      <p-button label="Guardar" type="submit" />
+    </div>
+  </form>
+</p-dialog>

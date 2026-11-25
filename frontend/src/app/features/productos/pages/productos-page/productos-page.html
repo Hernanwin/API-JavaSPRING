@@ -1,0 +1,136 @@
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-semibold text-surface-100">Catálogo de Productos</h1>
+    <p class="text-xs text-surface-400 mt-0.5">
+      @if (authStore.puedeVerCostos()) {
+        Precios comerciales, costos de reposición y márgenes por proveedor.
+      } @else {
+        Consulta de catálogo comercial (costos y edición de precios restringidos según tu rol).
+      }
+    </p>
+  </div>
+
+  @if (puedeGestionar()) {
+    <p-button label="Nuevo producto" icon="pi pi-plus" (onClick)="abrirNuevo()" />
+  } @else {
+    <p-tag value="Precios protegidos · Solo consulta" severity="secondary" />
+  }
+</div>
+
+<div class="bg-surface-900 border border-surface-800 rounded-xl p-4">
+  <p-table [value]="store.productos()" [loading]="store.cargando()" dataKey="id">
+    <ng-template #header>
+      <tr>
+        <th class="w-16">SKU</th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>Proveedor</th>
+        <th class="text-right">Precio Venta</th>
+        @if (authStore.puedeVerCostos()) {
+          <th class="text-right">Costo Compra</th>
+          <th class="text-right">Margen</th>
+        }
+        @if (puedeGestionar()) {
+          <th class="w-28"></th>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-producto>
+      <tr>
+        <td class="font-mono text-xs text-surface-400">#{{ producto.id }}</td>
+        <td class="font-medium text-surface-100">{{ producto.nombre }}</td>
+        <td class="text-surface-300">{{ producto.categoria || '—' }}</td>
+        <td class="text-surface-400 text-sm">{{ producto.nombreProveedor || '—' }}</td>
+        <td class="text-right font-semibold text-surface-100">
+          $ {{ producto.precio | number: '1.2-2' }}
+        </td>
+        @if (authStore.puedeVerCostos()) {
+          <td class="text-right font-mono text-surface-300">
+            @if (producto.costo != null) {
+              $ {{ producto.costo | number: '1.2-2' }}
+            } @else {
+              <span class="text-surface-500">—</span>
+            }
+          </td>
+          <td class="text-right">
+            @if (margenPorcentaje(producto); as margen) {
+              <p-tag
+                [value]="margen + '%'"
+                [severity]="margen >= 25 ? 'success' : margen >= 10 ? 'warn' : 'danger'"
+              />
+            } @else {
+              <span class="text-xs text-surface-500">—</span>
+            }
+          </td>
+        }
+        @if (puedeGestionar()) {
+          <td>
+            <div class="flex gap-1 justify-end">
+              <p-button icon="pi pi-pencil" severity="secondary" [text]="true" (onClick)="abrirEdicion(producto)" />
+              <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="confirmarEliminar(producto)" />
+            </div>
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="8" class="text-center text-surface-500 py-6">
+          Todavía no hay productos cargados en el catálogo.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '30rem' }"
+  [header]="editando() ? 'Editar producto y precios' : 'Nuevo producto'"
+>
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="flex flex-col gap-4 pt-2">
+    <div class="flex flex-col gap-1">
+      <label for="nombre" class="text-sm font-semibold text-slate-900">Nombre</label>
+      <input id="nombre" pInputText formControlName="nombre" placeholder="Ej. Remera Algodón" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label for="categoria" class="text-sm font-semibold text-slate-900">Categoría</label>
+        <input id="categoria" pInputText formControlName="categoria" placeholder="Ej. Indumentaria" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-semibold text-slate-900">Proveedor habitual</label>
+        <p-select
+          [options]="opcionesProveedores()"
+          optionLabel="nombre"
+          optionValue="id"
+          formControlName="idProveedor"
+          appendTo="body"
+        />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label for="precio" class="text-sm font-semibold text-slate-900">Precio de venta</label>
+        <p-inputnumber inputId="precio" formControlName="precio" mode="currency" currency="ARS" locale="es-AR" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="costo" class="text-sm font-semibold text-slate-900">Costo de reposición</label>
+        <p-inputnumber inputId="costo" formControlName="costo" mode="currency" currency="ARS" locale="es-AR" />
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button label="Cancelar" severity="secondary" [text]="true" type="button" (onClick)="dialogVisible.set(false)" />
+      <p-button label="Guardar" type="submit" />
+    </div>
+  </form>
+</p-dialog>

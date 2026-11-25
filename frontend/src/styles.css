@@ -1,0 +1,150 @@
+@use "primeicons/primeicons.css";
+@import "tailwindcss";
+@plugin "tailwindcss-primeui";
+
+@layer theme, base, primeng;
+
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ============================================================================
+   Alto contraste y legibilidad total en todos los formularios y dialogos:
+   Garantiza texto oscuro (#0f172a / #1e293b) sobre fondos claros (#ffffff),
+   evitando textos blancos o grises palidos al completar cualquier formulario.
+   ============================================================================ */
+.p-dialog {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.p-dialog .p-dialog-header,
+.p-dialog .p-dialog-title,
+.p-dialog .p-dialog-content,
+.p-dialog .p-dialog-footer {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.p-dialog .p-dialog-close-button {
+  color: #1e293b !important;
+}
+
+.p-dialog label,
+form label {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+.p-dialog form p,
+.p-dialog form span:not(.p-button-label):not(.p-button-icon):not(.p-tag-label):not(.p-tag),
+.p-dialog .form-help {
+  color: #1e293b;
+}
+
+/* Inputs, selects, numbers y passwords en formularios: fondo blanco, texto negro nitido */
+.p-dialog .p-inputtext,
+.p-dialog .p-inputnumber-input,
+.p-dialog .p-password-input,
+.p-dialog .p-select,
+.p-dialog .p-select-label,
+.p-dialog input,
+.p-dialog textarea,
+.form-panel-claro .p-inputtext,
+.form-panel-claro .p-password-input,
+.form-panel-claro .p-select,
+.form-panel-claro .p-select-label,
+.form-panel-claro input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+.p-dialog .p-inputtext::placeholder,
+.p-dialog .p-inputnumber-input::placeholder,
+.p-dialog .p-password-input::placeholder,
+.p-dialog input::placeholder,
+.form-panel-claro .p-inputtext::placeholder,
+.form-panel-claro .p-password-input::placeholder,
+.form-panel-claro input::placeholder {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+.p-dialog .p-select-label.p-placeholder,
+.form-panel-claro .p-select-label.p-placeholder {
+  color: #475569 !important;
+}
+
+.p-dialog .p-select-dropdown,
+.p-dialog .p-password-toggle-mask-icon,
+.p-dialog .p-inputnumber-button,
+.form-panel-claro .p-password-toggle-mask-icon {
+  color: #0f172a !important;
+}
+
+/* Opciones desplegables de p-select siempre con texto oscuro legible */
+.p-select-overlay {
+  background: #ffffff !important;
+  border: 1px solid #94a3b8 !important;
+}
+
+.p-select-option {
+  color: #0f172a !important;
+}
+
+.p-select-option:not(.p-select-option-selected):not(.p-disabled):hover,
+.p-select-option.p-focus {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.p-select-option.p-select-option-selected {
+  background: #dbeafe !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+/* Botones secundarios dentro de dialogos claros */
+.p-dialog .p-button-secondary.p-button-text,
+.p-dialog .p-button-secondary.p-button-outlined {
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ============================================================================
+   Tablas PrimeNG (p-table): fondo oscuro consistente con el dashboard
+   para que todos los textos y filas tengan contraste nitido y nunca blanco/blanco.
+   ============================================================================ */
+.p-datatable,
+.p-datatable-table-container,
+.p-datatable-table {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.p-datatable-thead > tr > th {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+.p-datatable-tbody > tr {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+.p-datatable-tbody > tr:hover {
+  background: #1e293b !important;
+}
+
+.p-datatable-tbody > tr > td {
+  border-color: #1e293b !important;
+  color: #f1f5f9;
+}

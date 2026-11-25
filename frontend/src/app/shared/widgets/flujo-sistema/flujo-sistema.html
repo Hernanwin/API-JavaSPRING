@@ -1,0 +1,21 @@
+<div class="bg-surface-900 border border-surface-800 rounded-xl px-5 py-4 flex items-center justify-between">
+  <div>
+    <p class="text-xs uppercase tracking-wide text-surface-500 mb-2">Flujo del sistema</p>
+    <div class="flex items-center gap-2">
+      @for (paso of pasos; track paso.numero; let last = $last) {
+        <div
+          class="flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm"
+          [class]="activeStep().includes(paso.numero)
+            ? 'bg-primary-500/15 border-primary-400 text-primary-300'
+            : 'border-surface-700 text-surface-500'"
+        >
+          <span class="text-xs font-mono">{{ paso.codigo }}</span>
+          <span>{{ paso.label }}</span>
+        </div>
+        @if (!last) {
+          <i class="pi pi-arrow-right text-surface-600 text-xs"></i>
+        }
+      }
+    </div>
+  </div>
+</div>
